@@ -38,7 +38,7 @@ public class TATPBenchmark extends BenchmarkModule {
 	}
 	
 	@Override
-	protected Package getProcedurePackageImpl() {
+	protected Package getProcedurePackageImpl(String procName) {
 		return (DeleteCallForwarding.class.getPackage());
 	}
 

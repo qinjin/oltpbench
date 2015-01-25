@@ -46,7 +46,7 @@ public class EpinionsBenchmark extends BenchmarkModule {
     }
 
     @Override
-    protected Package getProcedurePackageImpl() {
+    protected Package getProcedurePackageImpl(String procName) {
         return GetAverageRatingByTrustedUser.class.getPackage();
     }
 

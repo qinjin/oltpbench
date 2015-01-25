@@ -71,7 +71,7 @@ public class AuctionMarkBenchmark extends BenchmarkModule {
 	}
 	
 	@Override
-	protected Package getProcedurePackageImpl() {
+	protected Package getProcedurePackageImpl(String procName) {
 		return (GetItem.class.getPackage());
 	}
 

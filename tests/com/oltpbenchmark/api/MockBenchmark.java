@@ -15,7 +15,7 @@ public class MockBenchmark extends BenchmarkModule {
         super("mock", new WorkloadConfiguration(), true);
     }
     @Override
-    protected Package getProcedurePackageImpl() {
+    protected Package getProcedurePackageImpl(String procName) {
         // TODO Auto-generated method stub
         return null;
     }

@@ -29,12 +29,12 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 
-
 import com.oltpbenchmark.WorkloadConfiguration;
 import com.oltpbenchmark.api.BenchmarkModule;
 import com.oltpbenchmark.api.Loader;
 import com.oltpbenchmark.api.Worker;
-import com.oltpbenchmark.benchmarks.tpcc.procedures.NewOrder;
+import com.oltpbenchmark.benchmarks.tpcc.mdtc.procedures.NewOrderExt;
+import com.oltpbenchmark.benchmarks.tpcc.pojo.NewOrder;
 import com.oltpbenchmark.util.SimpleSystemPrinter;
 
 public class TPCCBenchmark extends BenchmarkModule {
@@ -45,8 +45,8 @@ public class TPCCBenchmark extends BenchmarkModule {
 	}
 
 	@Override
-	protected Package getProcedurePackageImpl() {
-		return (NewOrder.class.getPackage());
+	protected Package getProcedurePackageImpl(String procName) {
+	    return procName.endsWith("Ext") ? NewOrderExt.class.getPackage() : NewOrder.class.getPackage();
 	}
 
 	/**

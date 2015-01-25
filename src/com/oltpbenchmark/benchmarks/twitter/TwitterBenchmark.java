@@ -46,7 +46,7 @@ public class TwitterBenchmark extends BenchmarkModule {
 	}
 	
 	@Override
-	protected Package getProcedurePackageImpl() {
+	protected Package getProcedurePackageImpl(String procName) {
 	    return GetFollowers.class.getPackage();
 	}
 

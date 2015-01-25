@@ -52,7 +52,7 @@ public class LinkBenchBenchmark extends BenchmarkModule {
     }
 
     @Override
-    protected Package getProcedurePackageImpl() {
+    protected Package getProcedurePackageImpl(String procName) {
         return AddNode.class.getPackage();
     }
 

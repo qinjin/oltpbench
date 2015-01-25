@@ -60,7 +60,7 @@ public class SIBenchmark extends BenchmarkModule {
     }
 
     @Override
-    protected Package getProcedurePackageImpl() {
+    protected Package getProcedurePackageImpl(String procName) {
         return UpdateRecord.class.getPackage();
     }
 

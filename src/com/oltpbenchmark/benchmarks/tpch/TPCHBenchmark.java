@@ -41,7 +41,6 @@ import com.oltpbenchmark.api.BenchmarkModule;
 import com.oltpbenchmark.api.Loader;
 import com.oltpbenchmark.api.Worker;
 import com.oltpbenchmark.util.SimpleSystemPrinter;
-
 import com.oltpbenchmark.benchmarks.tpch.queries.Q1;
 
 
@@ -53,7 +52,7 @@ public class TPCHBenchmark extends BenchmarkModule {
 	}
 
 	@Override
-	protected Package getProcedurePackageImpl() {
+	protected Package getProcedurePackageImpl(String procName) {
 		return (Q1.class.getPackage());
 	}
 

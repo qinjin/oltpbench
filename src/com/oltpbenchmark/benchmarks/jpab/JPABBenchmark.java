@@ -61,7 +61,7 @@ public class JPABBenchmark extends BenchmarkModule {
     }
 
     @Override
-    protected Package getProcedurePackageImpl() {
+    protected Package getProcedurePackageImpl(String procName) {
         return Persist.class.getPackage();
     }
 

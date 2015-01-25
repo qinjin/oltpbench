@@ -131,7 +131,7 @@ public class WikipediaBenchmark extends BenchmarkModule {
 	}
 	
 	@Override
-	protected Package getProcedurePackageImpl() {
+	protected Package getProcedurePackageImpl(String procName) {
 		return (AddWatchList.class.getPackage());
 	}
 	

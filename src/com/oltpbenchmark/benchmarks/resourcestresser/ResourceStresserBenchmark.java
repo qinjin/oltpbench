@@ -40,7 +40,7 @@ public class ResourceStresserBenchmark extends BenchmarkModule {
 	}
 	
 	@Override
-	protected Package getProcedurePackageImpl() {
+	protected Package getProcedurePackageImpl(String procName) {
 	    return CPU1.class.getPackage();
 	}
 	

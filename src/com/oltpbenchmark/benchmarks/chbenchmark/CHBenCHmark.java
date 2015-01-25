@@ -23,7 +23,7 @@ public class CHBenCHmark extends BenchmarkModule {
 		super("chbenchmark", workConf, true);
 	}
 	
-	protected Package getProcedurePackageImpl() {
+	protected Package getProcedurePackageImpl(String procName) {
 		return (Q1.class.getPackage());
 	}
 	

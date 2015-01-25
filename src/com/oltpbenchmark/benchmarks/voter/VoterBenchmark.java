@@ -36,7 +36,7 @@ public class VoterBenchmark extends BenchmarkModule {
     }
 
     @Override
-    protected Package getProcedurePackageImpl() {
+    protected Package getProcedurePackageImpl(String procName) {
        return Vote.class.getPackage();
     }
 

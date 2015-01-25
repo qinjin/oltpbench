@@ -20,20 +20,20 @@
 package com.oltpbenchmark.benchmarks.tpcc;
 
 import com.oltpbenchmark.api.AbstractTestBenchmarkModule;
-import com.oltpbenchmark.benchmarks.tpcc.procedures.Delivery;
-import com.oltpbenchmark.benchmarks.tpcc.procedures.NewOrder;
-import com.oltpbenchmark.benchmarks.tpcc.procedures.OrderStatus;
-import com.oltpbenchmark.benchmarks.tpcc.procedures.Payment;
-import com.oltpbenchmark.benchmarks.tpcc.procedures.StockLevel;
+import com.oltpbenchmark.benchmarks.tpcc.mdtc.procedures.DeliveryExt;
+import com.oltpbenchmark.benchmarks.tpcc.mdtc.procedures.NewOrderExt;
+import com.oltpbenchmark.benchmarks.tpcc.mdtc.procedures.OrderStatusExt;
+import com.oltpbenchmark.benchmarks.tpcc.mdtc.procedures.PaymentExt;
+import com.oltpbenchmark.benchmarks.tpcc.mdtc.procedures.StockLevelExt;
 
-public class TestTPCCBenchmark extends AbstractTestBenchmarkModule<TPCCBenchmark> {
+public class TestMDTCBenchmark extends AbstractTestBenchmarkModule<TPCCBenchmark> {
 	
     public static final Class<?> PROC_CLASSES[] = {
-        Delivery.class,
-        NewOrder.class,
-        OrderStatus.class,
-        Payment.class,
-        StockLevel.class
+        DeliveryExt.class,
+        NewOrderExt.class,
+        OrderStatusExt.class,
+        PaymentExt.class,
+        StockLevelExt.class,
     };
     
 	@Override

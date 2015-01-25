@@ -148,10 +148,11 @@ public abstract class BenchmarkModule {
     protected abstract Loader makeLoaderImpl(Connection conn) throws SQLException;
 
     /**
+     * @param procName Procedure name.
      * @param txns
      * @return
      */
-    protected abstract Package getProcedurePackageImpl();
+    protected abstract Package getProcedurePackageImpl(String procName);
 
     // --------------------------------------------------------------------------
     // PUBLIC INTERFACE
@@ -356,7 +357,7 @@ public abstract class BenchmarkModule {
             return null;
         }
 
-        Package pkg = this.getProcedurePackageImpl();
+        Package pkg = this.getProcedurePackageImpl(procName);
         assert (pkg != null) : "Null Procedure package for " + this.benchmarkName;
         String fullName = pkg.getName() + "." + procName;
         Class<? extends Procedure> procClass = (Class<? extends Procedure>) ClassUtil.getClass(fullName);

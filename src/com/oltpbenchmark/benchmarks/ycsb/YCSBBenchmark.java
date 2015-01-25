@@ -62,7 +62,7 @@ public class YCSBBenchmark extends BenchmarkModule {
     }
 
     @Override
-    protected Package getProcedurePackageImpl() {
+    protected Package getProcedurePackageImpl(String procName) {
         // TODO Auto-generated method stub
         return InsertRecord.class.getPackage();
     }

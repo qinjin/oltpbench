@@ -65,7 +65,7 @@ public class SEATSBenchmark extends BenchmarkModule {
 	}
 	
 	@Override
-	protected Package getProcedurePackageImpl() {
+	protected Package getProcedurePackageImpl(String procName) {
 		return (LoadConfig.class.getPackage());
 	}
 
