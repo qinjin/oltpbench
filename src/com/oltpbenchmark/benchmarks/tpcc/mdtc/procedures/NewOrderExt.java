@@ -147,6 +147,9 @@ public class NewOrderExt extends MDTCProcedure {
             // Timestamp(System.currentTimeMillis()));
             // insert ooder first]]
             /* TODO: add error checking */
+            
+            statement = new BoundStatement(stmtInsertNewOrder).bind(1, o_id).bind(2, d_id).bind(3, w_id);
+            rs = session.execute(statement);
 
             /*
              * woonhak, [[change order stmtInsertOOrder.setInt(1, o_id);
