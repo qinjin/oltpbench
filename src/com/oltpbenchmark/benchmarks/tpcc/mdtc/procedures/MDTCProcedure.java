@@ -22,6 +22,8 @@ public abstract class MDTCProcedure extends TPCCProcedure{
             int terminalDistrictLowerID, int terminalDistrictUpperID,
             TPCCWorker w);
     
+    public abstract void initStatements(Session session);
+    
     //TODO:
     public static class Result{
         
