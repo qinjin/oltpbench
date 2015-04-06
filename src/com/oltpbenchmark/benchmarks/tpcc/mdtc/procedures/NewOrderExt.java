@@ -2,21 +2,30 @@ package com.oltpbenchmark.benchmarks.tpcc.mdtc.procedures;
 
 import java.util.Random;
 
+import mdtc.api.transaction.client.ResultSet;
+import mdtc.api.transaction.client.Row;
+import mdtc.api.transaction.client.TransactionClient;
+
 import org.apache.log4j.Logger;
 
-import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
 import com.oltpbenchmark.benchmarks.tpcc.TPCCConstants;
 import com.oltpbenchmark.benchmarks.tpcc.TPCCUtil;
 import com.oltpbenchmark.benchmarks.tpcc.TPCCWorker;
 import com.oltpbenchmark.benchmarks.tpcc.jTPCCConfig;
-import com.datastax.driver.core.PreparedStatement;
 
 public class NewOrderExt extends MDTCProcedure {
 
     private static final Logger LOG = Logger.getLogger(NewOrderExt.class);
+
+    private static final String NEWORDER_INSERT_ORDER_LINE_CQL = "NEWORDER_INSERT_ORDER_LINE_CQL";
+    private static final String NEWORDER_UPDATE_STOCK_CQL = "NEWORDER_UPDATE_STOCK_CQL";
+    private static final String NEWORDER_GET_STOCK_CQL = "NEWORDER_GET_STOCK_CQL";
+    private static final String NEWORDER_GET_ITEM_CQL = "NEWORDER_GET_ITEM_CQL";
+    private static final String NEWORDER_INSERT_ORDER_CQL = "NEWORDER_INSERT_ORDER_CQL";
+    private static final String NEWORDER_UPDATE_DIST_CQL = "NEWORDER_UPDATE_DIST_CQL";
+    private static final String NEWORDER_INSERT_NEW_ORDER_CQL = "NEWORDER_INSERT_NEW_ORDER_CQL";
+    private static final String NEWORDER_GET_DIST_CQL = "NEWORDER_GET_DIST_CQL";
+    private static final String NEWORDER_GET_CUST_WH_CQL = "NEWORDER_GET_CUST_WH_CQL";
 
     public final String STMT_GET_CUST_WH_CQL = "SELECT C_DISCOUNT, C_LAST, C_CREDIT, W_TAX" + "  FROM " + TPCCConstants.TABLENAME_CUSTOMER + ", " + TPCCConstants.TABLENAME_WAREHOUSE
             + " WHERE W_ID = ? AND C_W_ID = ?" + " AND C_D_ID = ? AND C_ID = ?";
@@ -34,18 +43,8 @@ public class NewOrderExt extends MDTCProcedure {
     public final String STMT_INSERT_ORDER_LINE_CQL = "INSERT INTO " + TPCCConstants.TABLENAME_ORDERLINE + " (OL_O_ID, OL_D_ID, OL_W_ID, OL_NUMBER, OL_I_ID, OL_SUPPLY_W_ID,"
             + "  OL_QUANTITY, OL_AMOUNT, OL_DIST_INFO) VALUES (?,?,?,?,?,?,?,?,?)";
 
-    private PreparedStatement stmtGetCustWhse = null;
-    private PreparedStatement stmtGetDist = null;
-    private PreparedStatement stmtInsertNewOrder = null;
-    private PreparedStatement stmtUpdateDist = null;
-    private PreparedStatement stmtInsertOOrder = null;
-    private PreparedStatement stmtGetItem = null;
-    private PreparedStatement stmtGetStock = null;
-    private PreparedStatement stmtUpdateStock = null;
-    private PreparedStatement stmtInsertOrderLine = null;
-
-    public Result run(Session session, Random gen, int terminalWarehouseID, int numWarehouses, int terminalDistrictLowerID, int terminalDistrictUpperID, TPCCWorker w) {
-        initStatements(session);
+    public void run(TransactionClient txnClient, Random gen, int terminalWarehouseID, int numWarehouses, int terminalDistrictLowerID, int terminalDistrictUpperID, TPCCWorker w) {
+        initStatements(txnClient);
 
         int districtID = TPCCUtil.randomNumber(terminalDistrictLowerID, terminalDistrictUpperID, gen);
         int customerID = TPCCUtil.getCustomerID(gen);
@@ -72,24 +71,24 @@ public class NewOrderExt extends MDTCProcedure {
         if (TPCCUtil.randomNumber(1, 100, gen) == 1)
             itemIDs[numItems - 1] = jTPCCConfig.INVALID_ITEM_ID;
 
-        newOrderTransaction(terminalWarehouseID, districtID, customerID, numItems, allLocal, itemIDs, supplierWarehouseIDs, orderQuantities, session, w);
-        return null;
+        newOrderTransaction(terminalWarehouseID, districtID, customerID, numItems, allLocal, itemIDs, supplierWarehouseIDs, orderQuantities, txnClient, w);
 
     }
 
-    public void initStatements(Session session) {
-        stmtGetCustWhse = session.prepare(STMT_GET_CUST_WH_CQL);
-        stmtGetDist = session.prepare(STMT_GET_DIST_CQL);
-        stmtInsertNewOrder = session.prepare(STMT_INSERT_NEW_ORDER_CQL);
-        stmtUpdateDist = session.prepare(STMT_UPDATE_DIST_CQL);
-        stmtInsertOOrder = session.prepare(STMT_INSERT_ORDER_CQL);
-        stmtGetItem = session.prepare(STMT_GET_ITEM_CQL);
-        stmtGetStock = session.prepare(STMT_GET_STOCK_CQL);
-        stmtUpdateStock = session.prepare(STMT_UPDATE_STOCK_CQL);
-        stmtInsertOrderLine = session.prepare(STMT_INSERT_ORDER_LINE_CQL);
+    public void initStatements(TransactionClient txnClient) {
+        txnClient.setPrepareStatement(NEWORDER_GET_CUST_WH_CQL, STMT_GET_CUST_WH_CQL);
+        txnClient.setPrepareStatement(NEWORDER_GET_DIST_CQL, STMT_GET_DIST_CQL);
+        txnClient.setPrepareStatement(NEWORDER_INSERT_NEW_ORDER_CQL, STMT_INSERT_NEW_ORDER_CQL);
+        txnClient.setPrepareStatement(NEWORDER_UPDATE_DIST_CQL, STMT_UPDATE_DIST_CQL);
+        txnClient.setPrepareStatement(NEWORDER_INSERT_ORDER_CQL, STMT_INSERT_ORDER_CQL);
+        txnClient.setPrepareStatement(NEWORDER_GET_ITEM_CQL, STMT_GET_ITEM_CQL);
+        txnClient.setPrepareStatement(NEWORDER_GET_STOCK_CQL, STMT_GET_STOCK_CQL);
+        txnClient.setPrepareStatement(NEWORDER_UPDATE_STOCK_CQL, STMT_UPDATE_STOCK_CQL);
+        txnClient.setPrepareStatement(NEWORDER_INSERT_ORDER_LINE_CQL, STMT_INSERT_ORDER_LINE_CQL);
     }
 
-    private void newOrderTransaction(int w_id, int d_id, int c_id, int o_ol_cnt, int o_all_local, int[] itemIDs, int[] supplierWarehouseIDs, int[] orderQuantities, Session session, TPCCWorker w) {
+    private void newOrderTransaction(int w_id, int d_id, int c_id, int o_ol_cnt, int o_all_local, int[] itemIDs, int[] supplierWarehouseIDs, int[] orderQuantities, TransactionClient txnClient,
+            TPCCWorker w) {
         float c_discount, w_tax, d_tax = 0, i_price;
         int d_next_o_id, o_id = -1, s_quantity;
         String c_last = null, c_credit = null, i_name, i_data, s_data;
@@ -104,13 +103,13 @@ public class NewOrderExt extends MDTCProcedure {
         int s_remote_cnt_increment;
         float ol_amount, total_amount = 0;
 
-        BoundStatement statement;
         ResultSet rs;
         Row resultRow;
         try {
-            statement = new BoundStatement(stmtGetCustWhse).bind(1, w_id).bind(2, w_id).bind(3, w_id).bind(4, w_id);
-            rs = session.execute(statement);
-            if (!rs.iterator().hasNext())
+            // statement = new BoundStatement(stmtGetCustWhse).bind(1,
+            // w_id).bind(2, w_id).bind(3, w_id).bind(4, w_id);
+            rs = txnClient.executePreparedStatement(NEWORDER_GET_CUST_WH_CQL, w_id, w_id, w_id, w_id);
+            if (rs.isEmpty())
                 throw new RuntimeException("W_ID=" + w_id + " C_D_ID=" + d_id + " C_ID=" + c_id + " not found!");
             resultRow = rs.iterator().next();
             c_discount = resultRow.getFloat("C_DISCOUNT");
@@ -119,9 +118,10 @@ public class NewOrderExt extends MDTCProcedure {
             w_tax = resultRow.getFloat("W_TAX");
             rs = null;
 
-            statement = new BoundStatement(stmtGetDist).bind(1, w_id).bind(2, w_id);
-            rs = session.execute(statement);
-            if (!rs.iterator().hasNext()) {
+            // statement = new BoundStatement(stmtGetDist).bind(1, w_id).bind(2,
+            // w_id);
+            rs = txnClient.executePreparedStatement(NEWORDER_GET_DIST_CQL, w_id, w_id);
+            if (rs.isEmpty()) {
                 throw new RuntimeException("D_ID=" + d_id + " D_W_ID=" + w_id + " not found!");
             }
             resultRow = rs.iterator().next();
@@ -131,25 +131,29 @@ public class NewOrderExt extends MDTCProcedure {
 
             // woonhak, need to change order because of foreign key constraints
             // update next_order_id first, but it might doesn't matter
-            statement = new BoundStatement(stmtUpdateDist).bind(1, w_id).bind(2, w_id);
-            rs = session.execute(statement);
-            if (!rs.iterator().hasNext())
+            // statement = new BoundStatement(stmtUpdateDist).bind(1,
+            // w_id).bind(2, w_id);
+            rs = txnClient.executePreparedStatement(NEWORDER_UPDATE_DIST_CQL, w_id, w_id);
+            if (rs.isEmpty())
                 throw new RuntimeException("Error!! Cannot update next_order_id on district for D_ID=" + d_id + " D_W_ID=" + w_id);
 
             o_id = d_next_o_id;
 
             // woonhak, need to change order, because of foreign key constraints
             // [[insert ooder first
-            statement = new BoundStatement(stmtInsertOOrder).bind(1, w_id).bind(2, w_id).bind(3, w_id).bind(4, w_id).bind(6, o_ol_cnt).bind(7, o_all_local);
-            rs = session.execute(statement);
+            // statement = new BoundStatement(stmtInsertOOrder).bind(1,
+            // w_id).bind(2, w_id).bind(3, w_id).bind(4, w_id).bind(6,
+            // o_ol_cnt).bind(7, o_all_local);
+            rs = txnClient.executePreparedStatement(NEWORDER_INSERT_ORDER_CQL, w_id, w_id, w_id, w_id, o_ol_cnt, o_all_local);
             // TODO: Timestamp in Cassandra?????
             // stmtInsertOOrder.setTimestamp(5, new
             // Timestamp(System.currentTimeMillis()));
             // insert ooder first]]
             /* TODO: add error checking */
-            
-            statement = new BoundStatement(stmtInsertNewOrder).bind(1, o_id).bind(2, d_id).bind(3, w_id);
-            rs = session.execute(statement);
+
+            // statement = new BoundStatement(stmtInsertNewOrder).bind(1,
+            // o_id).bind(2, d_id).bind(3, w_id);
+            rs = txnClient.executePreparedStatement(NEWORDER_INSERT_NEW_ORDER_CQL, o_id, d_id, w_id);
 
             /*
              * woonhak, [[change order stmtInsertOOrder.setInt(1, o_id);
@@ -165,9 +169,9 @@ public class NewOrderExt extends MDTCProcedure {
                 ol_supply_w_id = supplierWarehouseIDs[ol_number - 1];
                 ol_i_id = itemIDs[ol_number - 1];
                 ol_quantity = orderQuantities[ol_number - 1];
-                statement = new BoundStatement(stmtGetItem).bind(1, ol_i_id);
-                rs = session.execute(statement);
-                if (!rs.iterator().hasNext()) {
+                // statement = new BoundStatement(stmtGetItem).bind(1, ol_i_id);
+                rs = txnClient.executePreparedStatement(NEWORDER_GET_ITEM_CQL, ol_i_id);
+                if (rs.isEmpty()) {
                     // This is (hopefully) an expected error: this is an
                     // expected new order rollback
                     assert ol_number == o_ol_cnt;
@@ -184,8 +188,9 @@ public class NewOrderExt extends MDTCProcedure {
                 itemPrices[ol_number - 1] = i_price;
                 itemNames[ol_number - 1] = i_name;
 
-                statement = new BoundStatement(stmtGetStock).bind(1, ol_i_id).bind(2, ol_supply_w_id);
-                rs = session.execute(statement);
+                // statement = new BoundStatement(stmtGetStock).bind(1,
+                // ol_i_id).bind(2, ol_supply_w_id);
+                rs = txnClient.executePreparedStatement(NEWORDER_GET_STOCK_CQL, ol_i_id, ol_supply_w_id);
                 if (!rs.iterator().hasNext())
                     throw new RuntimeException("I_ID=" + ol_i_id + " not found!");
 
@@ -218,8 +223,11 @@ public class NewOrderExt extends MDTCProcedure {
                     s_remote_cnt_increment = 1;
                 }
 
-                statement = new BoundStatement(stmtUpdateStock).bind(1, s_quantity).bind(2, ol_quantity).bind(3, s_remote_cnt_increment).bind(4, ol_i_id).bind(5, ol_supply_w_id);
-                rs = session.execute(statement);
+                // statement = new BoundStatement(stmtUpdateStock).bind(1,
+                // s_quantity).bind(2, ol_quantity).bind(3,
+                // s_remote_cnt_increment).bind(4, ol_i_id).bind(5,
+                // ol_supply_w_id);
+                rs = txnClient.executePreparedStatement(NEWORDER_UPDATE_STOCK_CQL, s_quantity, ol_quantity, s_remote_cnt_increment, ol_i_id, ol_supply_w_id);
 
                 ol_amount = ol_quantity * i_price;
                 orderLineAmounts[ol_number - 1] = ol_amount;
@@ -264,9 +272,11 @@ public class NewOrderExt extends MDTCProcedure {
                         break;
                 }
 
-                statement = new BoundStatement(stmtInsertOrderLine).bind(1, o_id).bind(2, d_id).bind(3, w_id).bind(4, ol_number).bind(5, ol_i_id).bind(6, ol_supply_w_id).bind(7, ol_quantity)
-                        .bind(8, ol_amount).bind(9, ol_dist_info);
-                rs = session.execute(statement);
+                // statement = new BoundStatement(stmtInsertOrderLine).bind(1,
+                // o_id).bind(2, d_id).bind(3, w_id).bind(4, ol_number).bind(5,
+                // ol_i_id).bind(6, ol_supply_w_id).bind(7, ol_quantity)
+                // .bind(8, ol_amount).bind(9, ol_dist_info);
+                rs = txnClient.executePreparedStatement(NEWORDER_INSERT_ORDER_LINE_CQL, o_id, d_id, w_id, ol_number, ol_i_id, ol_supply_w_id, ol_quantity);
 
             } // end-for
 

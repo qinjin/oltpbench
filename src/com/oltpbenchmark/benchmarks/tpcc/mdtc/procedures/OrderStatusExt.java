@@ -5,24 +5,24 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Random;
 
+import mdtc.api.transaction.client.ResultSet;
+import mdtc.api.transaction.client.Row;
+import mdtc.api.transaction.client.TransactionClient;
+
 import org.apache.log4j.Logger;
 
-import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
-import com.oltpbenchmark.api.SQLStmt;
 import com.oltpbenchmark.benchmarks.tpcc.TPCCConstants;
 import com.oltpbenchmark.benchmarks.tpcc.TPCCUtil;
 import com.oltpbenchmark.benchmarks.tpcc.TPCCWorker;
-import com.oltpbenchmark.benchmarks.tpcc.mdtc.procedures.MDTCProcedure.Result;
 import com.oltpbenchmark.benchmarks.tpcc.pojo.Customer;
-import com.oltpbenchmark.benchmarks.tpcc.procedures.TPCCProcedure;
 
 public class OrderStatusExt extends MDTCProcedure {
-
     private static final Logger LOG = Logger.getLogger(OrderStatusExt.class);
+    
+    private static final String OS_CUSTOMER_BY_NAME = "OS_CUSTOMER_BY_NAME";
+    private static final String OS_GET_CUST = "OS_GET_CUST";
+    private static final String OS_GET_ORDER_LINES = "OS_GET_ORDER_LINES";
+    private static final String OS_GET_NEW_EST_ORDER = "OS_GET_NEW_EST_ORDER";
 
     private final String STMT_GET_NEW_EST_ORDER = "SELECT O_ID, O_CARRIER_ID, O_ENTRY_D FROM " + TPCCConstants.TABLENAME_OPENORDER + " WHERE O_W_ID = ?"
             + " AND O_D_ID = ? AND O_C_ID = ? ORDER BY O_ID DESC LIMIT 1";
@@ -33,14 +33,9 @@ public class OrderStatusExt extends MDTCProcedure {
     private final String STMT_CUSTOMER_BY_NAME = "SELECT C_FIRST, C_MIDDLE, C_ID, C_STREET_1, C_STREET_2, C_CITY, " + "C_STATE, C_ZIP, C_PHONE, C_CREDIT, C_CREDIT_LIM, C_DISCOUNT, "
             + "C_BALANCE, C_YTD_PAYMENT, C_PAYMENT_CNT, C_SINCE FROM " + TPCCConstants.TABLENAME_CUSTOMER + " WHERE C_W_ID = ? AND C_D_ID = ? AND C_LAST = ? ORDER BY C_FIRST";
 
-    private PreparedStatement ordStatGetNewestOrd = null;
-    private PreparedStatement ordStatGetOrderLines = null;
-    private PreparedStatement payGetCust = null;
-    private PreparedStatement customerByName = null;
-
-    public Result run(Session session, Random gen, int terminalWarehouseID, int numWarehouses, int terminalDistrictLowerID, int terminalDistrictUpperID, TPCCWorker w) {
+    public void run(TransactionClient txnClient, Random gen, int terminalWarehouseID, int numWarehouses, int terminalDistrictLowerID, int terminalDistrictUpperID, TPCCWorker w) {
         // initializing all prepared statements
-        initStatements(session);
+        initStatements(txnClient);
 
         int districtID = TPCCUtil.randomNumber(terminalDistrictLowerID, terminalDistrictUpperID, gen);
         boolean isCustomerByName = false;
@@ -55,26 +50,25 @@ public class OrderStatusExt extends MDTCProcedure {
             customerID = TPCCUtil.getCustomerID(gen);
         }
 
-        orderStatusTransaction(terminalWarehouseID, districtID, customerID, customerLastName, isCustomerByName, session, w);
-        return null;
+        orderStatusTransaction(terminalWarehouseID, districtID, customerID, customerLastName, isCustomerByName, txnClient, w);
     }
 
-    public void initStatements(Session session) {
-        ordStatGetNewestOrd = session.prepare(STMT_GET_NEW_EST_ORDER);
-        ordStatGetOrderLines = session.prepare(STMT_GET_ORDER_LINES);
-        payGetCust = session.prepare(STMT_GET_CUST);
-        customerByName = session.prepare(STMT_CUSTOMER_BY_NAME);
+    public void initStatements(TransactionClient txnClient) {
+        txnClient.setPrepareStatement(OS_GET_NEW_EST_ORDER, STMT_GET_NEW_EST_ORDER);
+        txnClient.setPrepareStatement(OS_GET_ORDER_LINES, STMT_GET_ORDER_LINES);
+        txnClient.setPrepareStatement(OS_GET_CUST, STMT_GET_CUST);
+        txnClient.setPrepareStatement(OS_CUSTOMER_BY_NAME, STMT_CUSTOMER_BY_NAME);
     }
 
     // attention duplicated code across trans... ok for now to maintain separate
     // prepared statements
-    public Customer getCustomerById(int c_w_id, int c_d_id, int c_id, Session session) {
-        BoundStatement statement;
+    public Customer getCustomerById(int c_w_id, int c_d_id, int c_id, TransactionClient txnClient) {
         ResultSet rs;
         Row resultRow;
 
-        statement = new BoundStatement(payGetCust).bind(1, c_w_id).bind(2, c_d_id).bind(3, c_id);
-        rs = session.execute(statement);
+        // statement = new BoundStatement(payGetCust).bind(1, c_w_id).bind(2,
+        // c_d_id).bind(3, c_id);
+        rs = txnClient.executePreparedStatement(OS_GET_CUST, c_w_id, c_d_id, c_id);
         if (!rs.iterator().hasNext()) {
             throw new RuntimeException("C_ID=" + c_id + " C_D_ID=" + c_d_id + " C_W_ID=" + c_w_id + " not found!");
         }
@@ -86,7 +80,7 @@ public class OrderStatusExt extends MDTCProcedure {
         return c;
     }
 
-    private void orderStatusTransaction(int w_id, int d_id, int c_id, String c_last, boolean c_by_name, Session session, TPCCWorker w) {
+    private void orderStatusTransaction(int w_id, int d_id, int c_id, String c_last, boolean c_by_name, TransactionClient txnClient, TPCCWorker w) {
         int o_id = -1, o_carrier_id = -1;
         Timestamp entdate;
         ArrayList<String> orderLines = new ArrayList<String>();
@@ -96,20 +90,20 @@ public class OrderStatusExt extends MDTCProcedure {
             assert c_id <= 0;
             // TODO: This only needs c_balance, c_first, c_middle, c_id
             // only fetch those columns?
-            c = getCustomerByName(w_id, d_id, c_last, session);
+            c = getCustomerByName(w_id, d_id, c_last, txnClient);
         } else {
             assert c_last == null;
-            c = getCustomerById(w_id, d_id, c_id, session);
+            c = getCustomerById(w_id, d_id, c_id, txnClient);
         }
 
-        BoundStatement statement;
         ResultSet rs;
         Row resultRow;
 
         // find the newest order for the customer
         // retrieve the carrier & order date for the most recent order.
-        statement = new BoundStatement(ordStatGetNewestOrd).bind(1, w_id).bind(2, d_id).bind(3, c.c_id);
-        rs = session.execute(statement);
+        // statement = new BoundStatement(ordStatGetNewestOrd).bind(1,
+        // w_id).bind(2, d_id).bind(3, c.c_id);
+        rs = txnClient.executePreparedStatement(OS_GET_NEW_EST_ORDER, w_id, d_id, c.c_id);
         if (!rs.iterator().hasNext()) {
             throw new RuntimeException("No orders for O_W_ID=" + w_id + " O_D_ID=" + d_id + " O_C_ID=" + c.c_id);
         }
@@ -121,8 +115,9 @@ public class OrderStatusExt extends MDTCProcedure {
         rs = null;
 
         // retrieve the order lines for the most recent order
-        statement = new BoundStatement(ordStatGetOrderLines).bind(1, o_id).bind(2, d_id).bind(3, w_id);
-        rs = session.execute(statement);
+        // statement = new BoundStatement(ordStatGetOrderLines).bind(1,
+        // o_id).bind(2, d_id).bind(3, w_id);
+        rs = txnClient.executePreparedStatement(OS_GET_ORDER_LINES, o_id, d_id, w_id);
 
         Iterator<Row> iter = rs.iterator();
         while (iter.hasNext()) {
@@ -198,14 +193,14 @@ public class OrderStatusExt extends MDTCProcedure {
 
     // attention this code is repeated in other transacitons... ok for now to
     // allow for separate statements.
-    public Customer getCustomerByName(int c_w_id, int c_d_id, String c_last, Session session) {
+    public Customer getCustomerByName(int c_w_id, int c_d_id, String c_last, TransactionClient txnClient) {
         ArrayList<Customer> customers = new ArrayList<Customer>();
-        BoundStatement statement;
         ResultSet rs;
         Row resultRow;
 
-        statement = new BoundStatement(customerByName).bind(1, c_w_id).bind(2, c_d_id).bind(3, c_last);
-        rs = session.execute(statement);
+        // statement = new BoundStatement(customerByName).bind(1,
+        // c_w_id).bind(2, c_d_id).bind(3, c_last);
+        rs = txnClient.executePreparedStatement(OS_CUSTOMER_BY_NAME, c_w_id, c_d_id, c_last);
         Iterator<Row> iter = rs.iterator();
         while (!iter.hasNext()) {
             resultRow = iter.next();

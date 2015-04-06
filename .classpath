@@ -41,9 +41,9 @@
 	<classpathentry kind="lib" path="lib/httpcore-4.3.jar"/>
 	<classpathentry kind="lib" path="lib/httpclient-4.3.1.jar"/>
 	<classpathentry kind="lib" path="lib/httpmime-4.3.1.jar"/>
-	<classpathentry kind="lib" path="lib/cassandra-driver-core-2.1.2.jar"/>
 	<classpathentry kind="lib" path="lib/guava-16.0.jar"/>
 	<classpathentry kind="lib" path="lib/netty-3.9.0.Final.jar"/>
 	<classpathentry kind="lib" path="lib/metrics-core-3.0.2.jar"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/MDTC"/>
 	<classpathentry kind="output" path="build"/>
 </classpath>

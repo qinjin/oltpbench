@@ -31,10 +31,8 @@ import java.sql.SQLException;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.Host;
-import com.datastax.driver.core.Metadata;
-import com.datastax.driver.core.Session;
+import mdtc.api.transaction.client.TransactionClient;
+
 import com.oltpbenchmark.api.Procedure.UserAbortException;
 import com.oltpbenchmark.api.TransactionType;
 import com.oltpbenchmark.api.Worker;
@@ -61,7 +59,8 @@ public class TPCCWorker extends Worker {
 
     private static final AtomicInteger terminalId = new AtomicInteger(0);
 
-    private final Session session;
+//    private final Session session;
+    private final TransactionClient txnClient;
 
     public TPCCWorker(String terminalName, int terminalWarehouseID, int terminalDistrictLowerID, int terminalDistrictUpperID, TPCCBenchmark benchmarkModule, SimplePrinter terminalOutputArea,
             SimplePrinter errorOutputArea, int numWarehouses) throws SQLException {
@@ -78,20 +77,8 @@ public class TPCCWorker extends Worker {
         this.terminalOutputArea = terminalOutputArea;
         this.errorOutputArea = errorOutputArea;
         this.numWarehouses = numWarehouses;
-        this.session = initCassandraSession();
-    }
-
-    private Session initCassandraSession() {
-        Cluster cluster = Cluster.builder().addContactPoint("127.0.0.1").build();
-        // Print cluster metadata.
-        Metadata metadata = cluster.getMetadata();
-        System.out.printf("Connected to cluster: %s\n", metadata.getClusterName());
-        for (Host host : metadata.getAllHosts()) {
-            System.out.printf("Datacenter: %s; Host: %s; Rack: %s\n", host.getDatacenter(), host.getAddress(), host.getRack());
-        }
-
-        Session session = cluster.connect("tpcc");
-        return session;
+//        this.session = initCassandraSession();
+        this.txnClient = new TransactionClient();
     }
 
     /**
@@ -125,11 +112,12 @@ public class TPCCWorker extends Worker {
     private TransactionStatus executeMDTCWork(TransactionType nextTransaction) {
         try {
             MDTCProcedure proc = (MDTCProcedure) this.getProcedure(nextTransaction.getProcedureClass());
-            proc.run(session, gen, terminalWarehouseID, numWarehouses, terminalDistrictLowerID, terminalDistrictUpperID, this);
+            proc.run(txnClient, gen, terminalWarehouseID, numWarehouses, terminalDistrictLowerID, terminalDistrictUpperID, this);
             transactionCount++;
         } catch (Throwable ex) {
             ex.printStackTrace();
             return (TransactionStatus.RETRY_DIFFERENT);
+//            System.exit(1);
         }
         return (TransactionStatus.SUCCESS);
     }

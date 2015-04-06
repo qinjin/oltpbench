@@ -3,13 +3,12 @@ package com.oltpbenchmark.benchmarks.tpcc.mdtc.procedures;
 import java.util.ArrayList;
 import java.util.Random;
 
+import mdtc.api.transaction.client.ResultSet;
+import mdtc.api.transaction.client.Row;
+import mdtc.api.transaction.client.TransactionClient;
+
 import org.apache.log4j.Logger;
 
-import com.datastax.driver.core.BoundStatement;
-import com.datastax.driver.core.PreparedStatement;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
 import com.oltpbenchmark.benchmarks.tpcc.TPCCConstants;
 import com.oltpbenchmark.benchmarks.tpcc.TPCCUtil;
 import com.oltpbenchmark.benchmarks.tpcc.TPCCWorker;
@@ -19,6 +18,17 @@ import com.oltpbenchmark.benchmarks.tpcc.pojo.Customer;
 public class PaymentExt extends MDTCProcedure {
 
     private static final Logger LOG = Logger.getLogger(PaymentExt.class);
+
+    private static final String PAY_CUSTOMER_BY_NAME = "PAY_CUSTOMER_BY_NAME";
+    private static final String PAY_INSERT_HIST = "PAY_INSERT_HIST";
+    private static final String PAY_UPDATE_BAL = "PAY_UPDATE_BAL";
+    private static final String PAY_UPDATE_CUST_BALC = "PAY_UPDATE_CUST_BALC";
+    private static final String PAY_GET_CUST_C_DATA = "PAY_GET_CUST_C_DATA";
+    private static final String PAY_GET_CUST = "PAY_GET_CUST";
+    private static final String PAY_GET_DIST = "PAY_GET_DIST";
+    private static final String PAY_UPDATE_DIST = "PAY_UPDATE_DIST";
+    private static final String PAY_GET_WHSE = "PAY_GET_WHSE";
+    private static final String PAY_UPDATE_WHSE = "PAY_UPDATE_WHSE";
 
     private final String STMT_UPDATE_WHSE = "UPDATE " + TPCCConstants.TABLENAME_WAREHOUSE + " SET W_YTD = W_YTD + ?  WHERE W_ID = ? ";
     private final String STMT_GET_WHSE = "SELECT W_STREET_1, W_STREET_2, W_CITY, W_STATE, W_ZIP, W_NAME" + " FROM " + TPCCConstants.TABLENAME_WAREHOUSE + " WHERE W_ID = ?";
@@ -34,21 +44,9 @@ public class PaymentExt extends MDTCProcedure {
     private final String STMT_CUSTOMER_BY_NAME = "SELECT C_FIRST, C_MIDDLE, C_ID, C_STREET_1, C_STREET_2, C_CITY, " + "C_STATE, C_ZIP, C_PHONE, C_CREDIT, C_CREDIT_LIM, C_DISCOUNT, "
             + "C_BALANCE, C_YTD_PAYMENT, C_PAYMENT_CNT, C_SINCE FROM " + TPCCConstants.TABLENAME_CUSTOMER + " " + "WHERE C_W_ID = ? AND C_D_ID = ? AND C_LAST = ? ORDER BY C_FIRST";
 
-    // Payment Txn
-    private PreparedStatement payUpdateWhse = null;
-    private PreparedStatement payGetWhse = null;
-    private PreparedStatement payUpdateDist = null;
-    private PreparedStatement payGetDist = null;
-    private PreparedStatement payGetCust = null;
-    private PreparedStatement payGetCustCdata = null;
-    private PreparedStatement payUpdateCustBalCdata = null;
-    private PreparedStatement payUpdateCustBal = null;
-    private PreparedStatement payInsertHist = null;
-    private PreparedStatement customerByName = null;
-
-    public Result run(Session session, Random gen, int terminalWarehouseID, int numWarehouses, int terminalDistrictLowerID, int terminalDistrictUpperID, TPCCWorker w) {
+    public void run(TransactionClient txnClient, Random gen, int terminalWarehouseID, int numWarehouses, int terminalDistrictLowerID, int terminalDistrictUpperID, TPCCWorker w) {
         // initializing all prepared statements
-        initStatements(session);
+        initStatements(txnClient);
 
         // payUpdateWhse =this.getPreparedStatement(conn, payUpdateWhseSQL);
 
@@ -84,39 +82,37 @@ public class PaymentExt extends MDTCProcedure {
 
         float paymentAmount = (float) (TPCCUtil.randomNumber(100, 500000, gen) / 100.0);
 
-        paymentTransaction(terminalWarehouseID, customerWarehouseID, paymentAmount, districtID, customerDistrictID, customerID, customerLastName, customerByName, session, w);
-
-        return null;
+        paymentTransaction(terminalWarehouseID, customerWarehouseID, paymentAmount, districtID, customerDistrictID, customerID, customerLastName, customerByName, txnClient, w);
     }
 
-    public void initStatements(Session session) {
-        payUpdateWhse = session.prepare(STMT_UPDATE_WHSE);
-        payGetWhse = session.prepare(STMT_GET_WHSE);
-        payUpdateDist = session.prepare(STMT_UPDATE_DIST);
-        payGetDist = session.prepare(STMT_GET_DIST);
-        payGetCust = session.prepare(STMT_GET_CUST);
-        payGetCustCdata = session.prepare(STMT_GET_CUST_C_DATA);
-        payUpdateCustBalCdata = session.prepare(STMT_UPDATE_CUST_BALC);
-        payUpdateCustBal = session.prepare(STMT_UPDATE_BAL);
-        payInsertHist = session.prepare(STMT_INSERT_HIST);
-        customerByName = session.prepare(STMT_CUSTOMER_BY_NAME);
+    public void initStatements(TransactionClient txnClient) {
+        txnClient.setPrepareStatement(PAY_UPDATE_WHSE, STMT_UPDATE_WHSE);
+        txnClient.setPrepareStatement(PAY_GET_WHSE, STMT_GET_WHSE);
+        txnClient.setPrepareStatement(PAY_UPDATE_DIST, STMT_UPDATE_DIST);
+        txnClient.setPrepareStatement(PAY_GET_DIST, STMT_GET_DIST);
+        txnClient.setPrepareStatement(PAY_GET_CUST, STMT_GET_CUST);
+        txnClient.setPrepareStatement(PAY_GET_CUST_C_DATA, STMT_GET_CUST_C_DATA);
+        txnClient.setPrepareStatement(PAY_UPDATE_CUST_BALC, STMT_UPDATE_CUST_BALC);
+        txnClient.setPrepareStatement(PAY_UPDATE_BAL, STMT_UPDATE_BAL);
+        txnClient.setPrepareStatement(PAY_INSERT_HIST, STMT_INSERT_HIST);
+        txnClient.setPrepareStatement(PAY_CUSTOMER_BY_NAME, STMT_CUSTOMER_BY_NAME);
     }
 
-    private void paymentTransaction(int w_id, int c_w_id, float h_amount, int d_id, int c_d_id, int c_id, String c_last, boolean c_by_name, Session session, TPCCWorker w) {
+    private void paymentTransaction(int w_id, int c_w_id, float h_amount, int d_id, int c_d_id, int c_id, String c_last, boolean c_by_name, TransactionClient txnClient, TPCCWorker w) {
         String w_street_1, w_street_2, w_city, w_state, w_zip, w_name;
         String d_street_1, d_street_2, d_city, d_state, d_zip, d_name;
 
-        BoundStatement statement;
         ResultSet rs;
         Row resultRow;
 
-        statement = new BoundStatement(payUpdateWhse).bind(1, h_amount).bind(2, w_id);
-        rs = session.execute(statement);
+        // statement = new BoundStatement(payUpdateWhse).bind(1,
+        // h_amount).bind(2, w_id);
+        rs = txnClient.executePreparedStatement(PAY_UPDATE_WHSE, h_amount, w_id);
         if (!rs.iterator().hasNext())
             throw new RuntimeException("W_ID=" + w_id + " not found!");
 
-        statement = new BoundStatement(payGetWhse).bind(1, w_id);
-        rs = session.execute(statement);
+        // statement = new BoundStatement(payGetWhse).bind(1, w_id);
+        rs = txnClient.executePreparedStatement(PAY_GET_WHSE, w_id);
         if (!rs.iterator().hasNext())
             throw new RuntimeException("W_ID=" + w_id + " not found!");
         resultRow = rs.iterator().next();
@@ -128,13 +124,15 @@ public class PaymentExt extends MDTCProcedure {
         w_name = resultRow.getString("W_NAME");
         rs = null;
 
-        statement = new BoundStatement(payUpdateDist).bind(1, h_amount).bind(2, w_id).bind(3, d_id);
-        rs = session.execute(statement);
+        // statement = new BoundStatement(payUpdateDist).bind(1,
+        // h_amount).bind(2, w_id).bind(3, d_id);
+        rs = txnClient.executePreparedStatement(PAY_UPDATE_DIST, h_amount, w_id, d_id);
         if (!rs.iterator().hasNext())
             throw new RuntimeException("D_ID=" + d_id + " D_W_ID=" + w_id + " not found!");
 
-        statement = new BoundStatement(payGetDist).bind(1, w_id).bind(2, d_id);
-        rs = session.execute(statement);
+        // statement = new BoundStatement(payGetDist).bind(1, w_id).bind(2,
+        // d_id);
+        rs = txnClient.executePreparedStatement(PAY_GET_DIST, w_id, d_id);
         if (!rs.iterator().hasNext())
             throw new RuntimeException("D_ID=" + d_id + " D_W_ID=" + w_id + " not found!");
         resultRow = rs.iterator().next();
@@ -149,10 +147,10 @@ public class PaymentExt extends MDTCProcedure {
         Customer c;
         if (c_by_name) {
             assert c_id <= 0;
-            c = getCustomerByName(c_w_id, c_d_id, c_last, session);
+            c = getCustomerByName(c_w_id, c_d_id, c_last, txnClient);
         } else {
             assert c_last == null;
-            c = getCustomerById(c_w_id, c_d_id, c_id, session);
+            c = getCustomerById(c_w_id, c_d_id, c_id, txnClient);
         }
 
         c.c_balance -= h_amount;
@@ -160,8 +158,9 @@ public class PaymentExt extends MDTCProcedure {
         c.c_payment_cnt += 1;
         String c_data = null;
         if (c.c_credit.equals("BC")) { // bad credit
-            statement = new BoundStatement(payGetCustCdata).bind(1, c_w_id).bind(2, c_d_id).bind(3, c.c_id);
-            rs = session.execute(statement);
+        // statement = new BoundStatement(payGetCustCdata).bind(1,
+        // c_w_id).bind(2, c_d_id).bind(3, c.c_id);
+            rs = txnClient.executePreparedStatement(PAY_GET_CUST_C_DATA, c_w_id, c_d_id, c.c_id);
             if (!rs.iterator().hasNext())
                 throw new RuntimeException("C_ID=" + c.c_id + " C_W_ID=" + c_w_id + " C_D_ID=" + c_d_id + " not found!");
             resultRow = rs.iterator().next();
@@ -172,15 +171,19 @@ public class PaymentExt extends MDTCProcedure {
             if (c_data.length() > 500)
                 c_data = c_data.substring(0, 500);
 
-            statement = new BoundStatement(payUpdateCustBalCdata).bind(1, c.c_balance).bind(2, c.c_ytd_payment).bind(3, c.c_payment_cnt).bind(4, c_data).bind(5, c_w_id).bind(6, c_d_id)
-                    .bind(7, c.c_id);
-            rs = session.execute(statement);
+            // statement = new BoundStatement(payUpdateCustBalCdata).bind(1,
+            // c.c_balance).bind(2, c.c_ytd_payment).bind(3,
+            // c.c_payment_cnt).bind(4, c_data).bind(5, c_w_id).bind(6, c_d_id)
+            // .bind(7, c.c_id);
+            rs = txnClient.executePreparedStatement(PAY_UPDATE_CUST_BALC, c.c_balance, c.c_ytd_payment, c.c_payment_cnt, c_data, c_w_id, c_d_id, c.c_id);
             if (!rs.iterator().hasNext())
                 throw new RuntimeException("Error in PYMNT Txn updating Customer C_ID=" + c.c_id + " C_W_ID=" + c_w_id + " C_D_ID=" + c_d_id);
 
         } else { // GoodCredit
-            statement = new BoundStatement(payUpdateCustBal).bind(1, c.c_balance).bind(2, c.c_ytd_payment).bind(3, c.c_payment_cnt).bind(4, c_w_id).bind(5, c_d_id).bind(6, c.c_id);
-            rs = session.execute(statement);
+        // statement = new BoundStatement(payUpdateCustBal).bind(1,
+        // c.c_balance).bind(2, c.c_ytd_payment).bind(3,
+        // c.c_payment_cnt).bind(4, c_w_id).bind(5, c_d_id).bind(6, c.c_id);
+            rs = txnClient.executePreparedStatement(PAY_UPDATE_BAL, c.c_balance, c.c_ytd_payment, c.c_payment_cnt, c_w_id, c_d_id, c.c_id);
             if (!rs.iterator().hasNext())
                 throw new RuntimeException("C_ID=" + c.c_id + " C_W_ID=" + c_w_id + " C_D_ID=" + c_d_id + " not found!");
 
@@ -192,8 +195,10 @@ public class PaymentExt extends MDTCProcedure {
             d_name = d_name.substring(0, 10);
         String h_data = w_name + "    " + d_name;
 
-        statement = new BoundStatement(payInsertHist).bind(1, c_d_id).bind(2, c_w_id).bind(3, c.c_id).bind(4, d_id).bind(5, w_id).bind(6, System.currentTimeMillis()).bind(7, h_amount).bind(8, h_data);
-        rs = session.execute(statement);
+        // statement = new BoundStatement(payInsertHist).bind(1, c_d_id).bind(2,
+        // c_w_id).bind(3, c.c_id).bind(4, d_id).bind(5, w_id).bind(6,
+        // System.currentTimeMillis()).bind(7, h_amount).bind(8, h_data);
+        rs = txnClient.executePreparedStatement(PAY_INSERT_HIST, c_d_id, c_w_id, c.c_id, d_id, w_id, System.currentTimeMillis(), h_amount, h_data);
 
         StringBuilder terminalMessage = new StringBuilder();
         terminalMessage.append("\n+---------------------------- PAYMENT ----------------------------+");
@@ -277,14 +282,14 @@ public class PaymentExt extends MDTCProcedure {
 
     // attention duplicated code across trans... ok for now to maintain separate
     // prepared statements
-    public Customer getCustomerById(int c_w_id, int c_d_id, int c_id, Session session) {
+    public Customer getCustomerById(int c_w_id, int c_d_id, int c_id, TransactionClient txnClient) {
 
-        BoundStatement statement;
         ResultSet rs;
         Row resultRow;
 
-        statement = new BoundStatement(payGetCust).bind(1, c_w_id).bind(2, c_d_id).bind(3, c_id);
-        rs = session.execute(statement);
+        // statement = new BoundStatement(payGetCust).bind(1, c_w_id).bind(2,
+        // c_d_id).bind(3, c_id);
+        rs = txnClient.executePreparedStatement(PAY_GET_CUST, c_w_id, c_d_id, c_id);
         if (!rs.iterator().hasNext()) {
             throw new RuntimeException("C_ID=" + c_id + " C_D_ID=" + c_d_id + " C_W_ID=" + c_w_id + " not found!");
         }
@@ -298,15 +303,15 @@ public class PaymentExt extends MDTCProcedure {
 
     // attention this code is repeated in other transacitons... ok for now to
     // allow for separate statements.
-    public Customer getCustomerByName(int c_w_id, int c_d_id, String c_last, Session session) {
+    public Customer getCustomerByName(int c_w_id, int c_d_id, String c_last, TransactionClient txnClient) {
         ArrayList<Customer> customers = new ArrayList<Customer>();
 
-        BoundStatement statement;
         ResultSet rs;
         Row resultRow;
 
-        statement = new BoundStatement(customerByName).bind(1, c_w_id).bind(2, c_d_id).bind(3, c_last);
-        rs = session.execute(statement);
+        // statement = new BoundStatement(customerByName).bind(1,
+        // c_w_id).bind(2, c_d_id).bind(3, c_last);
+        rs = txnClient.executePreparedStatement(PAY_CUSTOMER_BY_NAME, c_w_id, c_d_id, c_last);
         while (rs.iterator().hasNext()) {
             resultRow = rs.iterator().next();
             Customer c = MDTCUtil.newCustomerFromResults(resultRow);

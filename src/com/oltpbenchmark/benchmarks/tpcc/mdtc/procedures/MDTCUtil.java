@@ -2,7 +2,8 @@ package com.oltpbenchmark.benchmarks.tpcc.mdtc.procedures;
 
 import java.sql.Timestamp;
 
-import com.datastax.driver.core.Row;
+import mdtc.api.transaction.client.Row;
+
 import com.oltpbenchmark.benchmarks.tpcc.pojo.Customer;
 
 public class MDTCUtil {
