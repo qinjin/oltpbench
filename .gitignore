@@ -19,3 +19,4 @@ output.res
 # maven output
 target
 /outputfile.*
+/log
