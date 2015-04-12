@@ -26,22 +26,29 @@ public class NewOrderExt extends MDTCProcedure {
     private static final String NEWORDER_INSERT_NEW_ORDER_CQL = "NEWORDER_INSERT_NEW_ORDER_CQL";
     private static final String NEWORDER_GET_DIST_CQL = "NEWORDER_GET_DIST_CQL";
     private static final String NEWORDER_GET_CUST_WH_CQL = "NEWORDER_GET_CUST_WH_CQL";
+    private static final String NEWORDER_GET_NEXT_ORDER_ID = "NEWORDER_GET_NEXT_ORDER_ID";
+    private static final String NEWORDER_GET_STOCK_YTD = "NEWORDER_GET_STOCK_YTD";
+    private static final String NEWORDER_GET_ORDER_CNT = "NEWORDER_GET_ORDER_CNT";
+    private static final String NEWORDER_GET_REMOTE_CNT = "NEWORDER_GET_REMOTE_CNT";
 
     public final String STMT_GET_CUST_WH_CQL = "SELECT C_DISCOUNT, C_LAST, C_CREDIT, W_TAX" + "  FROM " + TPCCConstants.TABLENAME_CUSTOMER + ", " + TPCCConstants.TABLENAME_WAREHOUSE
             + " WHERE W_ID = ? AND C_W_ID = ?" + " AND C_D_ID = ? AND C_ID = ?";
     public final String STMT_GET_DIST_CQL = "SELECT C_DISCOUNT, C_LAST, C_CREDIT, W_TAX" + "  FROM " + TPCCConstants.TABLENAME_CUSTOMER + ", " + TPCCConstants.TABLENAME_WAREHOUSE
             + " WHERE W_ID = ? AND C_W_ID = ?" + " AND C_D_ID = ? AND C_ID = ?";
     public final String STMT_INSERT_NEW_ORDER_CQL = "INSERT INTO " + TPCCConstants.TABLENAME_NEWORDER + " (NO_O_ID, NO_D_ID, NO_W_ID) VALUES ( ?, ?, ?)";
-    public final String STMT_UPDATE_DIST_CQL = "UPDATE " + TPCCConstants.TABLENAME_DISTRICT + " SET D_NEXT_O_ID = D_NEXT_O_ID + 1 WHERE D_W_ID = ? AND D_ID = ?";
+    public final String STMT_UPDATE_DIST_CQL = "UPDATE " + TPCCConstants.TABLENAME_DISTRICT + " SET D_NEXT_O_ID = ? WHERE D_W_ID = ? AND D_ID = ?";
     public final String STMT_INSERT_ORDER_CQL = "INSERT INTO " + TPCCConstants.TABLENAME_OPENORDER + " (O_ID, O_D_ID, O_W_ID, O_C_ID, O_ENTRY_D, O_OL_CNT, O_ALL_LOCAL)"
             + " VALUES (?, ?, ?, ?, ?, ?, ?)";
     public final String STMT_GET_ITEM_CQL = "SELECT I_PRICE, I_NAME , I_DATA FROM " + TPCCConstants.TABLENAME_ITEM + " WHERE I_ID = ?";
-    public final String STMT_GET_STOCK_CQL = "SELECT S_QUANTITY, S_DATA, S_DIST_01, S_DIST_02, S_DIST_03, S_DIST_04, S_DIST_05, " + "       S_DIST_06, S_DIST_07, S_DIST_08, S_DIST_09, S_DIST_10"
-            + " FROM " + TPCCConstants.TABLENAME_STOCK + " WHERE S_I_ID = ? AND S_W_ID = ? FOR UPDATE";
-    public final String STMT_UPDATE_STOCK_CQL = "UPDATE " + TPCCConstants.TABLENAME_STOCK + " SET S_QUANTITY = ? , S_YTD = S_YTD + ?, S_ORDER_CNT = S_ORDER_CNT + 1, S_REMOTE_CNT = S_REMOTE_CNT + ? "
-            + " WHERE S_I_ID = ? AND S_W_ID = ?";
+    public final String STMT_GET_STOCK_CQL = "SELECT S_QUANTITY, S_DATA, S_DIST_01, S_DIST_02, S_DIST_03, S_DIST_04, S_DIST_05, " + "S_DIST_06, S_DIST_07, S_DIST_08, S_DIST_09, S_DIST_10" + " FROM "
+            + TPCCConstants.TABLENAME_STOCK + " WHERE S_I_ID = ? AND S_W_ID = ? FOR UPDATE";
+    public final String STMT_UPDATE_STOCK_CQL = "UPDATE " + TPCCConstants.TABLENAME_STOCK + " SET S_QUANTITY = ? , S_YTD = ?, S_ORDER_CNT = ?, S_REMOTE_CNT = ? " + " WHERE S_I_ID = ? AND S_W_ID = ?";
     public final String STMT_INSERT_ORDER_LINE_CQL = "INSERT INTO " + TPCCConstants.TABLENAME_ORDERLINE + " (OL_O_ID, OL_D_ID, OL_W_ID, OL_NUMBER, OL_I_ID, OL_SUPPLY_W_ID,"
             + "  OL_QUANTITY, OL_AMOUNT, OL_DIST_INFO) VALUES (?,?,?,?,?,?,?,?,?)";
+    public final String STMT_GET_NEXT_ORDER_ID = "SELECT D_NEXT_O_ID FROM " + TPCCConstants.TABLENAME_DISTRICT + " WHERE D_W_ID = ? AND D_ID = ?";
+    public final String STMT_GET_STOCK_YTD = "SELECT S_YTD FROM " + TPCCConstants.TABLENAME_STOCK + " WHERE S_I_ID = ? AND S_W_ID = ?";
+    public final String STMT_GET_ORDER_CNT = "SELECT S_ORDER_CNT FROM " + TPCCConstants.TABLENAME_STOCK + " WHERE S_I_ID = ? AND S_W_ID = ?";
+    public final String STMT_GET_REMOTE_CNT = "SELECT S_REMOTE_CNT FROM " + TPCCConstants.TABLENAME_STOCK + " WHERE S_I_ID = ? AND S_W_ID = ?";
 
     public void run(TransactionClient txnClient, Random gen, int terminalWarehouseID, int numWarehouses, int terminalDistrictLowerID, int terminalDistrictUpperID, TPCCWorker w) {
         initStatements(txnClient);
@@ -85,6 +92,10 @@ public class NewOrderExt extends MDTCProcedure {
         txnClient.setPrepareStatement(NEWORDER_GET_STOCK_CQL, STMT_GET_STOCK_CQL);
         txnClient.setPrepareStatement(NEWORDER_UPDATE_STOCK_CQL, STMT_UPDATE_STOCK_CQL);
         txnClient.setPrepareStatement(NEWORDER_INSERT_ORDER_LINE_CQL, STMT_INSERT_ORDER_LINE_CQL);
+        txnClient.setPrepareStatement(NEWORDER_GET_NEXT_ORDER_ID, NEWORDER_GET_NEXT_ORDER_ID);
+        txnClient.setPrepareStatement(NEWORDER_GET_STOCK_YTD, NEWORDER_GET_STOCK_YTD);
+        txnClient.setPrepareStatement(NEWORDER_GET_ORDER_CNT, NEWORDER_GET_ORDER_CNT);
+        txnClient.setPrepareStatement(NEWORDER_GET_REMOTE_CNT, NEWORDER_GET_REMOTE_CNT);
     }
 
     private void newOrderTransaction(int w_id, int d_id, int c_id, int o_ol_cnt, int o_all_local, int[] itemIDs, int[] supplierWarehouseIDs, int[] orderQuantities, TransactionClient txnClient,
@@ -129,11 +140,19 @@ public class NewOrderExt extends MDTCProcedure {
             d_tax = resultRow.getFloat("D_TAX");
             rs = null;
 
+            int next_oder_id;
+            // Read before write
+            rs = txnClient.executePreparedStatement(NEWORDER_GET_NEXT_ORDER_ID, w_id, w_id);
+            if (rs.isEmpty())
+                throw new RuntimeException("Error!! Cannot get next_order_id on district for D_ID=" + d_id + " D_W_ID=" + w_id);
+            resultRow = rs.iterator().next();
+            next_oder_id = resultRow.getInt("D_NEXT_O_ID") + 1;
+
             // woonhak, need to change order because of foreign key constraints
             // update next_order_id first, but it might doesn't matter
             // statement = new BoundStatement(stmtUpdateDist).bind(1,
             // w_id).bind(2, w_id);
-            rs = txnClient.executePreparedStatement(NEWORDER_UPDATE_DIST_CQL, w_id, w_id);
+            rs = txnClient.executePreparedStatement(NEWORDER_UPDATE_DIST_CQL, next_oder_id, w_id, w_id);
             if (rs.isEmpty())
                 throw new RuntimeException("Error!! Cannot update next_order_id on district for D_ID=" + d_id + " D_W_ID=" + w_id);
 
@@ -223,11 +242,36 @@ public class NewOrderExt extends MDTCProcedure {
                     s_remote_cnt_increment = 1;
                 }
 
+                double stock_ytd;
+                int oder_cnt;
+                int remote_cnt;
+                // Read before write!
+                rs = txnClient.executePreparedStatement(NEWORDER_GET_STOCK_YTD, ol_i_id, ol_supply_w_id);
+                if (rs.isEmpty()) {
+                    throw new RuntimeException("S_I_ID=" + ol_i_id + " S_W_ID=" + ol_supply_w_id + " not found!");
+                }
+                resultRow = rs.iterator().next();
+                stock_ytd = resultRow.getDouble("S_YTD");
+
+                rs = txnClient.executePreparedStatement(NEWORDER_GET_ORDER_CNT, ol_i_id, ol_supply_w_id);
+                if (rs.isEmpty()) {
+                    throw new RuntimeException("S_I_ID=" + ol_i_id + " S_W_ID=" + ol_supply_w_id + " not found!");
+                }
+                resultRow = rs.iterator().next();
+                oder_cnt = resultRow.getInt("S_ORDER_CNT");
+
+                rs = txnClient.executePreparedStatement(NEWORDER_GET_REMOTE_CNT, ol_i_id, ol_supply_w_id);
+                if (rs.isEmpty()) {
+                    throw new RuntimeException("S_I_ID=" + ol_i_id + " S_W_ID=" + ol_supply_w_id + " not found!");
+                }
+                resultRow = rs.iterator().next();
+                remote_cnt = resultRow.getInt("S_REMOTE_CNT");
+
                 // statement = new BoundStatement(stmtUpdateStock).bind(1,
                 // s_quantity).bind(2, ol_quantity).bind(3,
                 // s_remote_cnt_increment).bind(4, ol_i_id).bind(5,
                 // ol_supply_w_id);
-                rs = txnClient.executePreparedStatement(NEWORDER_UPDATE_STOCK_CQL, s_quantity, ol_quantity, s_remote_cnt_increment, ol_i_id, ol_supply_w_id);
+                rs = txnClient.executePreparedStatement(NEWORDER_UPDATE_STOCK_CQL, s_quantity, ol_quantity + stock_ytd, oder_cnt + 1, s_remote_cnt_increment + remote_cnt, ol_i_id, ol_supply_w_id);
 
                 ol_amount = ol_quantity * i_price;
                 orderLineAmounts[ol_number - 1] = ol_amount;
