@@ -30,8 +30,9 @@ public class PaymentExt extends MDTCProcedure {
     private static final String PAY_GET_WHSE = "PAY_GET_WHSE";
     private static final String PAY_UPDATE_WHSE = "PAY_UPDATE_WHSE";
     private static final String PAY_GET_YTD = "PAY_GET_YTD";
+    private static final String PAY_GET_WYTD = "PAY_GET_WYTD";
 
-    private final String STMT_UPDATE_WHSE = "UPDATE " + TPCCConstants.TABLENAME_WAREHOUSE + " SET W_YTD = W_YTD + ?  WHERE W_ID = ? ";
+    private final String STMT_UPDATE_WHSE = "UPDATE " + TPCCConstants.TABLENAME_WAREHOUSE + " SET W_YTD = ?  WHERE W_ID = ? ";
     private final String STMT_GET_WHSE = "SELECT W_STREET_1, W_STREET_2, W_CITY, W_STATE, W_ZIP, W_NAME" + " FROM " + TPCCConstants.TABLENAME_WAREHOUSE + " WHERE W_ID = ?";
     private final String STMT_UPDATE_DIST = "UPDATE " + TPCCConstants.TABLENAME_DISTRICT + " SET D_YTD = ? WHERE D_W_ID = ? AND D_ID = ?";
     private final String STMT_GET_DIST = "SELECT D_STREET_1, D_STREET_2, D_CITY, D_STATE, D_ZIP, D_NAME" + " FROM " + TPCCConstants.TABLENAME_DISTRICT + " WHERE D_W_ID = ? AND D_ID = ?";
@@ -45,6 +46,7 @@ public class PaymentExt extends MDTCProcedure {
     private final String STMT_CUSTOMER_BY_NAME = "SELECT C_FIRST, C_MIDDLE, C_ID, C_STREET_1, C_STREET_2, C_CITY, " + "C_STATE, C_ZIP, C_PHONE, C_CREDIT, C_CREDIT_LIM, C_DISCOUNT, "
             + "C_BALANCE, C_YTD_PAYMENT, C_PAYMENT_CNT, C_SINCE FROM " + TPCCConstants.TABLENAME_CUSTOMER + " " + "WHERE C_W_ID = ? AND C_D_ID = ? AND C_LAST = ? ORDER BY C_FIRST";
     private final String STMT_GET_YTD = "SELECT D_YTD FROM " + TPCCConstants.TABLENAME_DISTRICT + " WHERE D_W_ID = ? AND D_ID = ?";
+    private final String STMT_GET_WYTD = "SELECT W_YTD FROM " + TPCCConstants.TABLENAME_WAREHOUSE + " WHERE W_ID = ?";
     
     public void run(TransactionClient txnClient, Random gen, int terminalWarehouseID, int numWarehouses, int terminalDistrictLowerID, int terminalDistrictUpperID, TPCCWorker w) {
         // initializing all prepared statements
@@ -99,6 +101,7 @@ public class PaymentExt extends MDTCProcedure {
         txnClient.setPrepareStatement(PAY_INSERT_HIST, STMT_INSERT_HIST);
         txnClient.setPrepareStatement(PAY_CUSTOMER_BY_NAME, STMT_CUSTOMER_BY_NAME);
         txnClient.setPrepareStatement(PAY_GET_YTD, STMT_GET_YTD);
+        txnClient.setPrepareStatement(PAY_GET_WYTD, STMT_GET_WYTD);
     }
 
     private void paymentTransaction(int w_id, int c_w_id, float h_amount, int d_id, int c_d_id, int c_id, String c_last, boolean c_by_name, TransactionClient txnClient, TPCCWorker w) {
@@ -107,10 +110,18 @@ public class PaymentExt extends MDTCProcedure {
 
         ResultSet rs;
         Row resultRow;
-
+        
+        //Read before write.
+        float w_ytd;
+        rs = txnClient.executePreparedStatement(PAY_GET_WYTD, w_id);
+        if (!rs.iterator().hasNext())
+            throw new RuntimeException("W_ID=" + w_id + " not found!");
+        resultRow = rs.iterator().next();
+        w_ytd = resultRow.getFloat("W_YTD");
+        
         // statement = new BoundStatement(payUpdateWhse).bind(1,
         // h_amount).bind(2, w_id);
-        rs = txnClient.executePreparedStatement(PAY_UPDATE_WHSE, h_amount, w_id);
+        rs = txnClient.executePreparedStatement(PAY_UPDATE_WHSE, h_amount+w_ytd, w_id);
         if (!rs.iterator().hasNext())
             throw new RuntimeException("W_ID=" + w_id + " not found!");
 
