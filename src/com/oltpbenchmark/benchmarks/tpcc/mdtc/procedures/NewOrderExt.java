@@ -25,24 +25,25 @@ public class NewOrderExt extends MDTCProcedure {
     private static final String NEWORDER_UPDATE_DIST_CQL = "NEWORDER_UPDATE_DIST_CQL";
     private static final String NEWORDER_INSERT_NEW_ORDER_CQL = "NEWORDER_INSERT_NEW_ORDER_CQL";
     private static final String NEWORDER_GET_DIST_CQL = "NEWORDER_GET_DIST_CQL";
-    private static final String NEWORDER_GET_CUST_WH_CQL = "NEWORDER_GET_CUST_WH_CQL";
+    private static final String NEWORDER_GET_WH_CQL = "NEWORDER_GET_WH_CQL";
+    private static final String NEWORDER_GET_CUST_CQL = "NEWORDER_GET_CUST_CQL";
     private static final String NEWORDER_GET_NEXT_ORDER_ID = "NEWORDER_GET_NEXT_ORDER_ID";
     private static final String NEWORDER_GET_STOCK_YTD = "NEWORDER_GET_STOCK_YTD";
     private static final String NEWORDER_GET_ORDER_CNT = "NEWORDER_GET_ORDER_CNT";
     private static final String NEWORDER_GET_REMOTE_CNT = "NEWORDER_GET_REMOTE_CNT";
 
-    public final String STMT_GET_CUST_WH_CQL = "SELECT C_DISCOUNT, C_LAST, C_CREDIT, W_TAX" + "  FROM " + TPCCConstants.TABLENAME_CUSTOMER + ", " + TPCCConstants.TABLENAME_WAREHOUSE
-            + " WHERE W_ID = ? AND C_W_ID = ?" + " AND C_D_ID = ? AND C_ID = ?";
-    public final String STMT_GET_DIST_CQL = "SELECT C_DISCOUNT, C_LAST, C_CREDIT, W_TAX" + "  FROM " + TPCCConstants.TABLENAME_CUSTOMER + ", " + TPCCConstants.TABLENAME_WAREHOUSE
-            + " WHERE W_ID = ? AND C_W_ID = ?" + " AND C_D_ID = ? AND C_ID = ?";
+    public final String STMT_GET_CUST_CQL = "SELECT C_DISCOUNT, C_LAST, C_CREDIT" + "  FROM " + TPCCConstants.TABLENAME_CUSTOMER + " WHERE C_W_ID = ?";
+    public final String STMT_GET_WH_CQL = "SELECT W_TAX" + "  FROM " + TPCCConstants.TABLENAME_WAREHOUSE + " WHERE W_ID = ?";
+    public final String STMT_GET_DIST_CQL = "SELECT D_NEXT_O_ID, D_TAX FROM " + TPCCConstants.TABLENAME_DISTRICT
+                    + " WHERE D_W_ID = ?";
     public final String STMT_INSERT_NEW_ORDER_CQL = "INSERT INTO " + TPCCConstants.TABLENAME_NEWORDER + " (NO_O_ID, NO_D_ID, NO_W_ID) VALUES ( ?, ?, ?)";
-    public final String STMT_UPDATE_DIST_CQL = "UPDATE " + TPCCConstants.TABLENAME_DISTRICT + " SET D_NEXT_O_ID = ? WHERE D_W_ID = ? AND D_ID = ?";
+    public final String STMT_UPDATE_DIST_CQL = "UPDATE " + TPCCConstants.TABLENAME_DISTRICT + " SET D_NEXT_O_ID = ? WHERE D_W_ID = ?";
     public final String STMT_INSERT_ORDER_CQL = "INSERT INTO " + TPCCConstants.TABLENAME_OPENORDER + " (O_ID, O_D_ID, O_W_ID, O_C_ID, O_ENTRY_D, O_OL_CNT, O_ALL_LOCAL)"
             + " VALUES (?, ?, ?, ?, ?, ?, ?)";
     public final String STMT_GET_ITEM_CQL = "SELECT I_PRICE, I_NAME , I_DATA FROM " + TPCCConstants.TABLENAME_ITEM + " WHERE I_ID = ?";
-    public final String STMT_GET_STOCK_CQL = "SELECT S_QUANTITY, S_DATA, S_DIST_01, S_DIST_02, S_DIST_03, S_DIST_04, S_DIST_05, " + "S_DIST_06, S_DIST_07, S_DIST_08, S_DIST_09, S_DIST_10" + " FROM "
-            + TPCCConstants.TABLENAME_STOCK + " WHERE S_I_ID = ? AND S_W_ID = ? FOR UPDATE";
-    public final String STMT_UPDATE_STOCK_CQL = "UPDATE " + TPCCConstants.TABLENAME_STOCK + " SET S_QUANTITY = ? , S_YTD = ?, S_ORDER_CNT = ?, S_REMOTE_CNT = ? " + " WHERE S_I_ID = ? AND S_W_ID = ?";
+    public final String STMT_GET_STOCK_CQL = "SELECT S_QUANTITY, S_DATA, S_DIST_01, S_DIST_02, S_DIST_03, S_DIST_04, S_DIST_05, S_DIST_06, S_DIST_07, S_DIST_08, S_DIST_09, S_DIST_10" + " FROM "
+            + TPCCConstants.TABLENAME_STOCK + " WHERE S_W_ID = ?";
+    public final String STMT_UPDATE_STOCK_CQL = "UPDATE " + TPCCConstants.TABLENAME_STOCK + " SET S_QUANTITY = ? , S_YTD = ?, S_ORDER_CNT = ?, S_REMOTE_CNT = ? " + " WHERE S_W_ID = ?";
     public final String STMT_INSERT_ORDER_LINE_CQL = "INSERT INTO " + TPCCConstants.TABLENAME_ORDERLINE + " (OL_O_ID, OL_D_ID, OL_W_ID, OL_NUMBER, OL_I_ID, OL_SUPPLY_W_ID,"
             + "  OL_QUANTITY, OL_AMOUNT, OL_DIST_INFO) VALUES (?,?,?,?,?,?,?,?,?)";
     public final String STMT_GET_NEXT_ORDER_ID = "SELECT D_NEXT_O_ID FROM " + TPCCConstants.TABLENAME_DISTRICT + " WHERE D_W_ID = ? AND D_ID = ?";
@@ -83,7 +84,8 @@ public class NewOrderExt extends MDTCProcedure {
     }
 
     public void initStatements(TransactionClient txnClient) {
-        txnClient.setPrepareStatement(NEWORDER_GET_CUST_WH_CQL, STMT_GET_CUST_WH_CQL);
+        txnClient.setPrepareStatement(NEWORDER_GET_WH_CQL, STMT_GET_WH_CQL);
+        txnClient.setPrepareStatement(NEWORDER_GET_CUST_CQL, STMT_GET_CUST_CQL);
         txnClient.setPrepareStatement(NEWORDER_GET_DIST_CQL, STMT_GET_DIST_CQL);
         txnClient.setPrepareStatement(NEWORDER_INSERT_NEW_ORDER_CQL, STMT_INSERT_NEW_ORDER_CQL);
         txnClient.setPrepareStatement(NEWORDER_UPDATE_DIST_CQL, STMT_UPDATE_DIST_CQL);
@@ -92,10 +94,10 @@ public class NewOrderExt extends MDTCProcedure {
         txnClient.setPrepareStatement(NEWORDER_GET_STOCK_CQL, STMT_GET_STOCK_CQL);
         txnClient.setPrepareStatement(NEWORDER_UPDATE_STOCK_CQL, STMT_UPDATE_STOCK_CQL);
         txnClient.setPrepareStatement(NEWORDER_INSERT_ORDER_LINE_CQL, STMT_INSERT_ORDER_LINE_CQL);
-        txnClient.setPrepareStatement(NEWORDER_GET_NEXT_ORDER_ID, NEWORDER_GET_NEXT_ORDER_ID);
-        txnClient.setPrepareStatement(NEWORDER_GET_STOCK_YTD, NEWORDER_GET_STOCK_YTD);
-        txnClient.setPrepareStatement(NEWORDER_GET_ORDER_CNT, NEWORDER_GET_ORDER_CNT);
-        txnClient.setPrepareStatement(NEWORDER_GET_REMOTE_CNT, NEWORDER_GET_REMOTE_CNT);
+        txnClient.setPrepareStatement(NEWORDER_GET_NEXT_ORDER_ID, STMT_GET_NEXT_ORDER_ID);
+        txnClient.setPrepareStatement(NEWORDER_GET_STOCK_YTD, STMT_GET_STOCK_YTD);
+        txnClient.setPrepareStatement(NEWORDER_GET_ORDER_CNT, STMT_GET_ORDER_CNT);
+        txnClient.setPrepareStatement(NEWORDER_GET_REMOTE_CNT, STMT_GET_REMOTE_CNT);
     }
 
     private void newOrderTransaction(int w_id, int d_id, int c_id, int o_ol_cnt, int o_all_local, int[] itemIDs, int[] supplierWarehouseIDs, int[] orderQuantities, TransactionClient txnClient,
@@ -119,19 +121,24 @@ public class NewOrderExt extends MDTCProcedure {
         try {
             // statement = new BoundStatement(stmtGetCustWhse).bind(1,
             // w_id).bind(2, w_id).bind(3, w_id).bind(4, w_id);
-            rs = txnClient.executePreparedStatement(NEWORDER_GET_CUST_WH_CQL, w_id, w_id, w_id, w_id);
+            rs = txnClient.executePreparedStatement(NEWORDER_GET_WH_CQL, w_id);
             if (rs.isEmpty())
                 throw new RuntimeException("W_ID=" + w_id + " C_D_ID=" + d_id + " C_ID=" + c_id + " not found!");
             resultRow = rs.iterator().next();
             c_discount = resultRow.getFloat("C_DISCOUNT");
             c_last = resultRow.getString("C_LAST");
             c_credit = resultRow.getString("C_CREDIT");
+            
+            rs = txnClient.executePreparedStatement(NEWORDER_GET_CUST_CQL, w_id);
+            if (rs.isEmpty())
+                throw new RuntimeException("W_ID=" + w_id + " C_D_ID=" + d_id + " C_ID=" + c_id + " not found!");
+            resultRow = rs.iterator().next();
             w_tax = resultRow.getFloat("W_TAX");
             rs = null;
 
             // statement = new BoundStatement(stmtGetDist).bind(1, w_id).bind(2,
             // w_id);
-            rs = txnClient.executePreparedStatement(NEWORDER_GET_DIST_CQL, w_id, w_id);
+            rs = txnClient.executePreparedStatement(NEWORDER_GET_DIST_CQL, w_id);
             if (rs.isEmpty()) {
                 throw new RuntimeException("D_ID=" + d_id + " D_W_ID=" + w_id + " not found!");
             }
@@ -152,7 +159,7 @@ public class NewOrderExt extends MDTCProcedure {
             // update next_order_id first, but it might doesn't matter
             // statement = new BoundStatement(stmtUpdateDist).bind(1,
             // w_id).bind(2, w_id);
-            rs = txnClient.executePreparedStatement(NEWORDER_UPDATE_DIST_CQL, next_oder_id, w_id, w_id);
+            rs = txnClient.executePreparedStatement(NEWORDER_UPDATE_DIST_CQL, next_oder_id, w_id);
             if (rs.isEmpty())
                 throw new RuntimeException("Error!! Cannot update next_order_id on district for D_ID=" + d_id + " D_W_ID=" + w_id);
 
@@ -209,7 +216,7 @@ public class NewOrderExt extends MDTCProcedure {
 
                 // statement = new BoundStatement(stmtGetStock).bind(1,
                 // ol_i_id).bind(2, ol_supply_w_id);
-                rs = txnClient.executePreparedStatement(NEWORDER_GET_STOCK_CQL, ol_i_id, ol_supply_w_id);
+                rs = txnClient.executePreparedStatement(NEWORDER_GET_STOCK_CQL, ol_supply_w_id);
                 if (!rs.iterator().hasNext())
                     throw new RuntimeException("I_ID=" + ol_i_id + " not found!");
 
@@ -271,7 +278,7 @@ public class NewOrderExt extends MDTCProcedure {
                 // s_quantity).bind(2, ol_quantity).bind(3,
                 // s_remote_cnt_increment).bind(4, ol_i_id).bind(5,
                 // ol_supply_w_id);
-                rs = txnClient.executePreparedStatement(NEWORDER_UPDATE_STOCK_CQL, s_quantity, ol_quantity + stock_ytd, oder_cnt + 1, s_remote_cnt_increment + remote_cnt, ol_i_id, ol_supply_w_id);
+                rs = txnClient.executePreparedStatement(NEWORDER_UPDATE_STOCK_CQL, s_quantity, ol_quantity + stock_ytd, oder_cnt + 1, s_remote_cnt_increment + remote_cnt, ol_supply_w_id);
 
                 ol_amount = ol_quantity * i_price;
                 orderLineAmounts[ol_number - 1] = ol_amount;

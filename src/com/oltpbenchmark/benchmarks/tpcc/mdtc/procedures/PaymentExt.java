@@ -38,20 +38,19 @@ public class PaymentExt extends MDTCProcedure {
 
     private final String STMT_UPDATE_WHSE = "UPDATE " + TPCCConstants.TABLENAME_WAREHOUSE + " SET W_YTD = ?  WHERE W_ID = ? ";
     private final String STMT_GET_WHSE = "SELECT W_STREET_1, W_STREET_2, W_CITY, W_STATE, W_ZIP, W_NAME" + " FROM " + TPCCConstants.TABLENAME_WAREHOUSE + " WHERE W_ID = ?";
-    private final String STMT_UPDATE_DIST = "UPDATE " + TPCCConstants.TABLENAME_DISTRICT + " SET D_YTD = ? WHERE D_W_ID = ? AND D_ID = ?";
+    private final String STMT_UPDATE_DIST = "UPDATE " + TPCCConstants.TABLENAME_DISTRICT + " SET D_YTD = ? WHERE D_W_ID = ?";
     private final String STMT_GET_DIST = "SELECT D_STREET_1, D_STREET_2, D_CITY, D_STATE, D_ZIP, D_NAME" + " FROM " + TPCCConstants.TABLENAME_DISTRICT + " WHERE D_W_ID = ? AND D_ID = ?";
-    private final String STMT_GET_CUST = "SELECT C_FIRST, C_MIDDLE, C_LAST, C_STREET_1, C_STREET_2, " + "C_CITY, C_STATE, C_ZIP, C_PHONE, C_CREDIT, C_CREDIT_LIM, "
-            + "C_DISCOUNT, C_BALANCE, C_YTD_PAYMENT, C_PAYMENT_CNT, C_SINCE FROM " + TPCCConstants.TABLENAME_CUSTOMER + " WHERE " + "C_W_ID = ? AND C_D_ID = ? AND C_ID = ?";
-    private final String STMT_GET_CUST_C_DATA = "SELECT C_DATA FROM " + TPCCConstants.TABLENAME_CUSTOMER + " WHERE C_W_ID = ? AND C_D_ID = ? AND C_ID = ?";
-    private final String STMT_UPDATE_CUST_BALC = "UPDATE " + TPCCConstants.TABLENAME_CUSTOMER + " SET C_BALANCE = ?, C_YTD_PAYMENT = ?, " + "C_PAYMENT_CNT = ?, C_DATA = ? "
-            + "WHERE C_W_ID = ? AND C_D_ID = ? AND C_ID = ?";
-    private final String STMT_UPDATE_BAL = "UPDATE " + TPCCConstants.TABLENAME_CUSTOMER + " SET C_BALANCE = ?, C_YTD_PAYMENT = ?, " + "C_PAYMENT_CNT = ? WHERE C_W_ID = ? AND C_D_ID = ? AND C_ID = ?";
+    private final String STMT_GET_CUST = "SELECT C_FIRST, C_MIDDLE, C_LAST, C_STREET_1, C_STREET_2, C_CITY, C_STATE, C_ZIP, C_PHONE, C_CREDIT, C_CREDIT_LIM, "
+            + "C_DISCOUNT, C_BALANCE, C_YTD_PAYMENT, C_PAYMENT_CNT, C_SINCE FROM " + TPCCConstants.TABLENAME_CUSTOMER + " WHERE " + "C_W_ID = ?";
+    private final String STMT_GET_CUST_C_DATA = "SELECT C_DATA FROM " + TPCCConstants.TABLENAME_CUSTOMER + " WHERE C_W_ID = ?";
+    private final String STMT_UPDATE_CUST_BALC = "UPDATE " + TPCCConstants.TABLENAME_CUSTOMER + " SET C_BALANCE = ?, C_YTD_PAYMENT = ?, " + "C_PAYMENT_CNT = ?, C_DATA = ? " + "WHERE C_W_ID = ?";
+    private final String STMT_UPDATE_BAL = "UPDATE " + TPCCConstants.TABLENAME_CUSTOMER + " SET C_BALANCE = ?, C_YTD_PAYMENT = ?, " + "C_PAYMENT_CNT = ? WHERE C_W_ID = ?";
     private final String STMT_INSERT_HIST = "INSERT INTO " + TPCCConstants.TABLENAME_HISTORY + " (H_C_D_ID, H_C_W_ID, H_C_ID, H_D_ID, H_W_ID, H_DATE, H_AMOUNT, H_DATA) " + " VALUES (?,?,?,?,?,?,?,?)";
-    private final String STMT_CUSTOMER_BY_NAME = "SELECT C_FIRST, C_MIDDLE, C_ID, C_STREET_1, C_STREET_2, C_CITY, " + "C_STATE, C_ZIP, C_PHONE, C_CREDIT, C_CREDIT_LIM, C_DISCOUNT, "
-            + "C_BALANCE, C_YTD_PAYMENT, C_PAYMENT_CNT, C_SINCE FROM " + TPCCConstants.TABLENAME_CUSTOMER + " " + "WHERE C_W_ID = ? AND C_D_ID = ? AND C_LAST = ?";
+    private final String STMT_CUSTOMER_BY_NAME = "SELECT C_FIRST, C_MIDDLE, C_ID, C_STREET_1, C_STREET_2, C_CITY, C_STATE, C_ZIP, C_PHONE, C_CREDIT, C_CREDIT_LIM, C_DISCOUNT, "
+            + "C_BALANCE, C_YTD_PAYMENT, C_PAYMENT_CNT, C_SINCE FROM " + TPCCConstants.TABLENAME_CUSTOMER + " " + "WHERE C_W_ID = ?";
     private final String STMT_GET_YTD = "SELECT D_YTD FROM " + TPCCConstants.TABLENAME_DISTRICT + " WHERE D_W_ID = ? AND D_ID = ?";
     private final String STMT_GET_WYTD = "SELECT W_YTD FROM " + TPCCConstants.TABLENAME_WAREHOUSE + " WHERE W_ID = ?";
-    
+
     public void run(TransactionClient txnClient, Random gen, int terminalWarehouseID, int numWarehouses, int terminalDistrictLowerID, int terminalDistrictUpperID, TPCCWorker w) {
         // initializing all prepared statements
         initStatements(txnClient);
@@ -114,20 +113,20 @@ public class PaymentExt extends MDTCProcedure {
 
         ResultSet rs;
         Row resultRow;
-        
-        //Read before write.
-        float w_ytd;
-        rs = txnClient.executePreparedStatement(PAY_GET_WYTD, w_id);
-        if (!rs.iterator().hasNext())
-            throw new RuntimeException("W_ID=" + w_id + " not found!");
-        resultRow = rs.iterator().next();
-        w_ytd = resultRow.getFloat("W_YTD");
-        
+
+        // Read before write.
+        // float w_ytd;
+        // rs = txnClient.executePreparedStatement(PAY_GET_WYTD, w_id);
+        // if (!rs.iterator().hasNext())
+        // throw new RuntimeException("W_ID=" + w_id + " not found!");
+        // resultRow = rs.iterator().next();
+        // w_ytd = resultRow.getFloat("W_YTD");
+
         // statement = new BoundStatement(payUpdateWhse).bind(1,
         // h_amount).bind(2, w_id);
-        rs = txnClient.executePreparedStatement(PAY_UPDATE_WHSE, h_amount+w_ytd, w_id);
-        if (!rs.iterator().hasNext())
-            throw new RuntimeException("W_ID=" + w_id + " not found!");
+        rs = txnClient.executePreparedStatement(PAY_UPDATE_WHSE, h_amount, w_id);
+        // if (!rs.iterator().hasNext())
+        // throw new RuntimeException("W_ID=" + w_id + " not found!");
 
         // statement = new BoundStatement(payGetWhse).bind(1, w_id);
         rs = txnClient.executePreparedStatement(PAY_GET_WHSE, w_id);
@@ -143,16 +142,16 @@ public class PaymentExt extends MDTCProcedure {
         rs = null;
 
         int d_ytd;
-        //Read before write
+        // Read before write
         rs = txnClient.executePreparedStatement(PAY_GET_YTD, w_id, d_id);
         if (!rs.iterator().hasNext())
             throw new RuntimeException("D_ID=" + d_id + " D_W_ID=" + w_id + " not found!");
         resultRow = rs.iterator().next();
         d_ytd = resultRow.getInt("D_YTD");
-        
+
         // statement = new BoundStatement(payUpdateDist).bind(1,
         // h_amount).bind(2, w_id).bind(3, d_id);
-        rs = txnClient.executePreparedStatement(PAY_UPDATE_DIST, h_amount+d_ytd, w_id, d_id);
+        rs = txnClient.executePreparedStatement(PAY_UPDATE_DIST, h_amount + d_ytd, w_id);
         if (!rs.iterator().hasNext())
             throw new RuntimeException("D_ID=" + d_id + " D_W_ID=" + w_id + " not found!");
 
@@ -184,9 +183,9 @@ public class PaymentExt extends MDTCProcedure {
         c.c_payment_cnt += 1;
         String c_data = null;
         if (c.c_credit.equals("BC")) { // bad credit
-        // statement = new BoundStatement(payGetCustCdata).bind(1,
-        // c_w_id).bind(2, c_d_id).bind(3, c.c_id);
-            rs = txnClient.executePreparedStatement(PAY_GET_CUST_C_DATA, c_w_id, c_d_id, c.c_id);
+            // statement = new BoundStatement(payGetCustCdata).bind(1,
+            // c_w_id).bind(2, c_d_id).bind(3, c.c_id);
+            rs = txnClient.executePreparedStatement(PAY_GET_CUST_C_DATA, c_w_id);
             if (!rs.iterator().hasNext())
                 throw new RuntimeException("C_ID=" + c.c_id + " C_W_ID=" + c_w_id + " C_D_ID=" + c_d_id + " not found!");
             resultRow = rs.iterator().next();
@@ -201,15 +200,15 @@ public class PaymentExt extends MDTCProcedure {
             // c.c_balance).bind(2, c.c_ytd_payment).bind(3,
             // c.c_payment_cnt).bind(4, c_data).bind(5, c_w_id).bind(6, c_d_id)
             // .bind(7, c.c_id);
-            rs = txnClient.executePreparedStatement(PAY_UPDATE_CUST_BALC, c.c_balance, c.c_ytd_payment, c.c_payment_cnt, c_data, c_w_id, c_d_id, c.c_id);
+            rs = txnClient.executePreparedStatement(PAY_UPDATE_CUST_BALC, c.c_balance, c.c_ytd_payment, c.c_payment_cnt, c_data, c_w_id);
             if (!rs.iterator().hasNext())
                 throw new RuntimeException("Error in PYMNT Txn updating Customer C_ID=" + c.c_id + " C_W_ID=" + c_w_id + " C_D_ID=" + c_d_id);
 
         } else { // GoodCredit
-        // statement = new BoundStatement(payUpdateCustBal).bind(1,
-        // c.c_balance).bind(2, c.c_ytd_payment).bind(3,
-        // c.c_payment_cnt).bind(4, c_w_id).bind(5, c_d_id).bind(6, c.c_id);
-            rs = txnClient.executePreparedStatement(PAY_UPDATE_BAL, c.c_balance, c.c_ytd_payment, c.c_payment_cnt, c_w_id, c_d_id, c.c_id);
+            // statement = new BoundStatement(payUpdateCustBal).bind(1,
+            // c.c_balance).bind(2, c.c_ytd_payment).bind(3,
+            // c.c_payment_cnt).bind(4, c_w_id).bind(5, c_d_id).bind(6, c.c_id);
+            rs = txnClient.executePreparedStatement(PAY_UPDATE_BAL, c.c_balance, c.c_ytd_payment, c.c_payment_cnt, c_w_id);
             if (!rs.iterator().hasNext())
                 throw new RuntimeException("C_ID=" + c.c_id + " C_W_ID=" + c_w_id + " C_D_ID=" + c_d_id + " not found!");
 
@@ -315,7 +314,7 @@ public class PaymentExt extends MDTCProcedure {
 
         // statement = new BoundStatement(payGetCust).bind(1, c_w_id).bind(2,
         // c_d_id).bind(3, c_id);
-        rs = txnClient.executePreparedStatement(PAY_GET_CUST, c_w_id, c_d_id, c_id);
+        rs = txnClient.executePreparedStatement(PAY_GET_CUST, c_w_id);
         if (!rs.iterator().hasNext()) {
             throw new RuntimeException("C_ID=" + c_id + " C_D_ID=" + c_d_id + " C_W_ID=" + c_w_id + " not found!");
         }
@@ -337,7 +336,7 @@ public class PaymentExt extends MDTCProcedure {
 
         // statement = new BoundStatement(customerByName).bind(1,
         // c_w_id).bind(2, c_d_id).bind(3, c_last);
-        rs = txnClient.executePreparedStatement(PAY_CUSTOMER_BY_NAME, c_w_id, c_d_id, c_last);
+        rs = txnClient.executePreparedStatement(PAY_CUSTOMER_BY_NAME, c_w_id);
         List<Row> allRows = Lists.newArrayList(rs.allRows());
         Collections.sort(allRows, new Comparator<Row>() {
 
@@ -364,7 +363,7 @@ public class PaymentExt extends MDTCProcedure {
                 }
             }
         });
-        
+
         for (Row row : allRows) {
             Customer c = MDTCUtil.newCustomerFromResults(row);
             c.c_id = row.getInt("C_ID");
