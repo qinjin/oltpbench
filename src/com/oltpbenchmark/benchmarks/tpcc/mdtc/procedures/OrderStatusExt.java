@@ -2,7 +2,10 @@ package com.oltpbenchmark.benchmarks.tpcc.mdtc.procedures;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Random;
 
 import mdtc.api.transaction.client.ResultSet;
@@ -11,6 +14,7 @@ import mdtc.api.transaction.client.TransactionClient;
 
 import org.apache.log4j.Logger;
 
+import com.google.common.collect.Lists;
 import com.oltpbenchmark.benchmarks.tpcc.TPCCConstants;
 import com.oltpbenchmark.benchmarks.tpcc.TPCCUtil;
 import com.oltpbenchmark.benchmarks.tpcc.TPCCWorker;
@@ -18,20 +22,19 @@ import com.oltpbenchmark.benchmarks.tpcc.pojo.Customer;
 
 public class OrderStatusExt extends MDTCProcedure {
     private static final Logger LOG = Logger.getLogger(OrderStatusExt.class);
-    
+
     private static final String OS_CUSTOMER_BY_NAME = "OS_CUSTOMER_BY_NAME";
     private static final String OS_GET_CUST = "OS_GET_CUST";
     private static final String OS_GET_ORDER_LINES = "OS_GET_ORDER_LINES";
     private static final String OS_GET_NEW_EST_ORDER = "OS_GET_NEW_EST_ORDER";
 
-    private final String STMT_GET_NEW_EST_ORDER = "SELECT O_ID, O_CARRIER_ID, O_ENTRY_D FROM " + TPCCConstants.TABLENAME_OPENORDER + " WHERE O_W_ID = ?"
-            + " AND O_D_ID = ? AND O_C_ID = ? ORDER BY O_ID DESC LIMIT 1";
+    private final String STMT_GET_NEW_EST_ORDER = "SELECT O_ID, O_CARRIER_ID, O_ENTRY_D FROM " + TPCCConstants.TABLENAME_OPENORDER + " WHERE O_W_ID = ?" + " AND O_D_ID = ? AND O_C_ID = ?";
     private final String STMT_GET_ORDER_LINES = "SELECT OL_I_ID, OL_SUPPLY_W_ID, OL_QUANTITY," + " OL_AMOUNT, OL_DELIVERY_D" + " FROM " + TPCCConstants.TABLENAME_ORDERLINE + " WHERE OL_O_ID = ?"
             + " AND OL_D_ID =?" + " AND OL_W_ID = ?";
     private final String STMT_GET_CUST = "SELECT C_FIRST, C_MIDDLE, C_LAST, C_STREET_1, C_STREET_2, " + "C_CITY, C_STATE, C_ZIP, C_PHONE, C_CREDIT, C_CREDIT_LIM, "
             + "C_DISCOUNT, C_BALANCE, C_YTD_PAYMENT, C_PAYMENT_CNT, C_SINCE FROM " + TPCCConstants.TABLENAME_CUSTOMER + " WHERE " + "C_W_ID = ? AND C_D_ID = ? AND C_ID = ?";
     private final String STMT_CUSTOMER_BY_NAME = "SELECT C_FIRST, C_MIDDLE, C_ID, C_STREET_1, C_STREET_2, C_CITY, " + "C_STATE, C_ZIP, C_PHONE, C_CREDIT, C_CREDIT_LIM, C_DISCOUNT, "
-            + "C_BALANCE, C_YTD_PAYMENT, C_PAYMENT_CNT, C_SINCE FROM " + TPCCConstants.TABLENAME_CUSTOMER + " WHERE C_W_ID = ? AND C_D_ID = ? AND C_LAST = ? ORDER BY C_FIRST";
+            + "C_BALANCE, C_YTD_PAYMENT, C_PAYMENT_CNT, C_SINCE FROM " + TPCCConstants.TABLENAME_CUSTOMER + " WHERE C_W_ID = ? AND C_D_ID = ? AND C_LAST = ?";
 
     public void run(TransactionClient txnClient, Random gen, int terminalWarehouseID, int numWarehouses, int terminalDistrictLowerID, int terminalDistrictUpperID, TPCCWorker w) {
         // initializing all prepared statements
@@ -108,7 +111,25 @@ public class OrderStatusExt extends MDTCProcedure {
             throw new RuntimeException("No orders for O_W_ID=" + w_id + " O_D_ID=" + d_id + " O_C_ID=" + c.c_id);
         }
 
-        resultRow = rs.iterator().next();
+        List<Row> allRows = Lists.newArrayList(rs.allRows());
+        //Sort desc
+        Collections.sort(allRows, new Comparator<Row>() {
+
+            @Override
+            public int compare(Row o1, Row o2) {
+                if (o1 == null && o2 == null) {
+                    return 0;
+                } else if (o1 == null) {
+                    return 1;
+                } else if (o2 == null) {
+                    return -1;
+                } else {
+                    return o2.getInt("O_ID") - o1.getInt("O_ID");
+                }
+            }
+        });
+
+        resultRow = allRows.get(0);
         o_id = resultRow.getInt("O_ID");
         o_carrier_id = resultRow.getInt("O_CARRIER_ID");
         entdate = new Timestamp(resultRow.getLong("O_ENTRY_D"));
@@ -196,16 +217,40 @@ public class OrderStatusExt extends MDTCProcedure {
     public Customer getCustomerByName(int c_w_id, int c_d_id, String c_last, TransactionClient txnClient) {
         ArrayList<Customer> customers = new ArrayList<Customer>();
         ResultSet rs;
-        Row resultRow;
 
         // statement = new BoundStatement(customerByName).bind(1,
         // c_w_id).bind(2, c_d_id).bind(3, c_last);
         rs = txnClient.executePreparedStatement(OS_CUSTOMER_BY_NAME, c_w_id, c_d_id, c_last);
-        Iterator<Row> iter = rs.iterator();
-        while (!iter.hasNext()) {
-            resultRow = iter.next();
-            Customer c = MDTCUtil.newCustomerFromResults(resultRow);
-            c.c_id = resultRow.getInt("C_ID");
+        List<Row> allRows = Lists.newArrayList(rs.allRows());
+        Collections.sort(allRows, new Comparator<Row>() {
+
+            @Override
+            public int compare(Row o1, Row o2) {
+                if (o1 == null && o2 == null) {
+                    return 0;
+                } else if (o1 == null) {
+                    return -1;
+                } else if (o2 == null) {
+                    return 1;
+                } else {
+                    String c1 = o1.getString("C_FIRST");
+                    String c2 = o2.getString("C_FIRST");
+                    if (c1 == null && c2 == null) {
+                        return 0;
+                    } else if (c1 == null) {
+                        return -1;
+                    } else if (c2 == null) {
+                        return 1;
+                    } else {
+                        return c1.compareTo(c2);
+                    }
+                }
+            }
+        });
+
+        for (Row row : allRows) {
+            Customer c = MDTCUtil.newCustomerFromResults(row);
+            c.c_id = row.getInt("C_ID");
             c.c_last = c_last;
             customers.add(c);
         }

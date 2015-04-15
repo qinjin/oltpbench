@@ -1,6 +1,9 @@
 package com.oltpbenchmark.benchmarks.tpcc.mdtc.procedures;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Random;
 
 import mdtc.api.transaction.client.ResultSet;
@@ -9,6 +12,7 @@ import mdtc.api.transaction.client.TransactionClient;
 
 import org.apache.log4j.Logger;
 
+import com.google.common.collect.Lists;
 import com.oltpbenchmark.benchmarks.tpcc.TPCCConstants;
 import com.oltpbenchmark.benchmarks.tpcc.TPCCUtil;
 import com.oltpbenchmark.benchmarks.tpcc.TPCCWorker;
@@ -44,7 +48,7 @@ public class PaymentExt extends MDTCProcedure {
     private final String STMT_UPDATE_BAL = "UPDATE " + TPCCConstants.TABLENAME_CUSTOMER + " SET C_BALANCE = ?, C_YTD_PAYMENT = ?, " + "C_PAYMENT_CNT = ? WHERE C_W_ID = ? AND C_D_ID = ? AND C_ID = ?";
     private final String STMT_INSERT_HIST = "INSERT INTO " + TPCCConstants.TABLENAME_HISTORY + " (H_C_D_ID, H_C_W_ID, H_C_ID, H_D_ID, H_W_ID, H_DATE, H_AMOUNT, H_DATA) " + " VALUES (?,?,?,?,?,?,?,?)";
     private final String STMT_CUSTOMER_BY_NAME = "SELECT C_FIRST, C_MIDDLE, C_ID, C_STREET_1, C_STREET_2, C_CITY, " + "C_STATE, C_ZIP, C_PHONE, C_CREDIT, C_CREDIT_LIM, C_DISCOUNT, "
-            + "C_BALANCE, C_YTD_PAYMENT, C_PAYMENT_CNT, C_SINCE FROM " + TPCCConstants.TABLENAME_CUSTOMER + " " + "WHERE C_W_ID = ? AND C_D_ID = ? AND C_LAST = ? ORDER BY C_FIRST";
+            + "C_BALANCE, C_YTD_PAYMENT, C_PAYMENT_CNT, C_SINCE FROM " + TPCCConstants.TABLENAME_CUSTOMER + " " + "WHERE C_W_ID = ? AND C_D_ID = ? AND C_LAST = ?";
     private final String STMT_GET_YTD = "SELECT D_YTD FROM " + TPCCConstants.TABLENAME_DISTRICT + " WHERE D_W_ID = ? AND D_ID = ?";
     private final String STMT_GET_WYTD = "SELECT W_YTD FROM " + TPCCConstants.TABLENAME_WAREHOUSE + " WHERE W_ID = ?";
     
@@ -334,10 +338,36 @@ public class PaymentExt extends MDTCProcedure {
         // statement = new BoundStatement(customerByName).bind(1,
         // c_w_id).bind(2, c_d_id).bind(3, c_last);
         rs = txnClient.executePreparedStatement(PAY_CUSTOMER_BY_NAME, c_w_id, c_d_id, c_last);
-        while (rs.iterator().hasNext()) {
-            resultRow = rs.iterator().next();
-            Customer c = MDTCUtil.newCustomerFromResults(resultRow);
-            c.c_id = resultRow.getInt("C_ID");
+        List<Row> allRows = Lists.newArrayList(rs.allRows());
+        Collections.sort(allRows, new Comparator<Row>() {
+
+            @Override
+            public int compare(Row o1, Row o2) {
+                if (o1 == null && o2 == null) {
+                    return 0;
+                } else if (o1 == null) {
+                    return -1;
+                } else if (o2 == null) {
+                    return 1;
+                } else {
+                    String c1 = o1.getString("C_FIRST");
+                    String c2 = o2.getString("C_FIRST");
+                    if (c1 == null && c2 == null) {
+                        return 0;
+                    } else if (c1 == null) {
+                        return -1;
+                    } else if (c2 == null) {
+                        return 1;
+                    } else {
+                        return c1.compareTo(c2);
+                    }
+                }
+            }
+        });
+        
+        for (Row row : allRows) {
+            Customer c = MDTCUtil.newCustomerFromResults(row);
+            c.c_id = row.getInt("C_ID");
             c.c_last = c_last;
             customers.add(c);
         }

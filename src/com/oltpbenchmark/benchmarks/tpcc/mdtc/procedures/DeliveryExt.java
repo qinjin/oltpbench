@@ -1,11 +1,15 @@
 package com.oltpbenchmark.benchmarks.tpcc.mdtc.procedures;
 
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Random;
 
 import mdtc.api.transaction.client.ResultSet;
 import mdtc.api.transaction.client.Row;
 import mdtc.api.transaction.client.TransactionClient;
 
+import com.google.common.collect.Lists;
 import com.oltpbenchmark.benchmarks.tpcc.TPCCConstants;
 import com.oltpbenchmark.benchmarks.tpcc.TPCCUtil;
 import com.oltpbenchmark.benchmarks.tpcc.TPCCWorker;
@@ -22,8 +26,8 @@ public class DeliveryExt extends MDTCProcedure {
     private static final String DELIVERY_GET_CUST_BAN = "DELIVERY_GET_CUST_BAN";
     private static final String DELIVERY_GET_DELIVERY_COUNT = "DELIVERY_GET_DELIVERY_COUNT";
     
-    public static final String STMT_GET_ORDER_ID = "SELECT NO_O_ID FROM " + TPCCConstants.TABLENAME_NEWORDER + " WHERE NO_D_ID = ?" + " AND NO_W_ID = ? ORDER BY NO_O_ID ASC LIMIT 1";
-    public static final String STMT_DELETE_NEW_ORDER = "SELECT NO_O_ID FROM " + TPCCConstants.TABLENAME_NEWORDER + " WHERE NO_D_ID = ?" + " AND NO_W_ID = ? ORDER BY NO_O_ID ASC LIMIT 1";
+    public static final String STMT_GET_ORDER_ID = "SELECT NO_O_ID FROM " + TPCCConstants.TABLENAME_NEWORDER + " WHERE NO_D_ID = ?" + " AND NO_W_ID = ?";
+    public static final String STMT_DELETE_NEW_ORDER = "SELECT NO_O_ID FROM " + TPCCConstants.TABLENAME_NEWORDER + " WHERE NO_D_ID = ?" + " AND NO_W_ID = ?";
     public static final String STMT_GET_CUST_ID = "SELECT O_C_ID" + " FROM " + TPCCConstants.TABLENAME_OPENORDER + " WHERE O_ID = ?" + " AND O_D_ID = ?" + " AND O_W_ID = ?";
     public static final String STMT_UPDATE_CARRIER_ID = "UPDATE " + TPCCConstants.TABLENAME_OPENORDER + " SET O_CARRIER_ID = ?" + " WHERE O_ID = ?" + " AND O_D_ID = ?" + " AND O_W_ID = ?";
     public static final String STMT_UPDATE_DELIVERY_DATE = "UPDATE " + TPCCConstants.TABLENAME_ORDERLINE + " SET OL_DELIVERY_D = ?" + " WHERE OL_O_ID = ?" + " AND OL_D_ID = ?" + " AND OL_W_ID = ?";
@@ -71,8 +75,26 @@ public class DeliveryExt extends MDTCProcedure {
                 // be rare
                 continue;
             }
+            
+            List<Row> allRows = Lists.newArrayList(rs.allRows());
+            //Sort desc
+            Collections.sort(allRows, new Comparator<Row>() {
 
-            resultRow = rs.iterator().next();
+                @Override
+                public int compare(Row o1, Row o2) {
+                    if (o1 == null && o2 == null) {
+                        return 0;
+                    } else if (o1 == null) {
+                        return -1;
+                    } else if (o2 == null) {
+                        return 1;
+                    } else {
+                        return o1.getInt("NO_O_ID") - o2.getInt("NO_O_ID");
+                    }
+                }
+            });
+            
+            resultRow = allRows.get(0);
             int no_o_id = resultRow.getInt("NO_O_ID");
             orderIDs[d_id - 1] = no_o_id;
             rs = null;
