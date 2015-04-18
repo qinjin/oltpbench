@@ -59,8 +59,8 @@ public class TPCCWorker extends Worker {
 
     private static final AtomicInteger terminalId = new AtomicInteger(0);
 
-//    private final Session session;
     private final TransactionClient txnClient;
+    public static final boolean IS_MDTC = true;
 
     public TPCCWorker(String terminalName, int terminalWarehouseID, int terminalDistrictLowerID, int terminalDistrictUpperID, TPCCBenchmark benchmarkModule, SimplePrinter terminalOutputArea,
             SimplePrinter errorOutputArea, int numWarehouses) throws SQLException {
@@ -77,8 +77,11 @@ public class TPCCWorker extends Worker {
         this.terminalOutputArea = terminalOutputArea;
         this.errorOutputArea = errorOutputArea;
         this.numWarehouses = numWarehouses;
-//        this.session = initCassandraSession();
-        this.txnClient = new TransactionClient();
+        if (IS_MDTC) {
+            this.txnClient = new TransactionClient();
+        } else {
+            this.txnClient = null;
+        }
     }
 
     /**
@@ -86,8 +89,11 @@ public class TPCCWorker extends Worker {
      */
     @Override
     protected TransactionStatus executeWork(TransactionType nextTransaction) throws UserAbortException, SQLException {
-        return executeMDTCWork(nextTransaction);
-        // return executeSQLWork(nextTransaction);
+        if (IS_MDTC) {
+            return executeMDTCWork(nextTransaction);
+        } else {
+            return executeSQLWork(nextTransaction);
+        }
     }
 
     private TransactionStatus executeSQLWork(TransactionType nextTransaction) throws UserAbortException, SQLException {
@@ -100,7 +106,7 @@ public class TPCCWorker extends Worker {
             System.err.println("We have been invoked with an INVALID transactionType?!");
             throw new RuntimeException("Bad transaction type = " + nextTransaction);
         } catch (RuntimeException ex) {
-            ex.printStackTrace();
+            System.out.println("Warning: Rollback transaction for "+ex.getMessage());
             conn.rollback();
             return (TransactionStatus.RETRY_DIFFERENT);
         }
@@ -115,7 +121,7 @@ public class TPCCWorker extends Worker {
             proc.run(txnClient, gen, terminalWarehouseID, numWarehouses, terminalDistrictLowerID, terminalDistrictUpperID, this);
             transactionCount++;
         } catch (Throwable ex) {
-            ex.printStackTrace();
+            System.out.println("Warning: Rollback transaction for "+ex.getMessage());
             return (TransactionStatus.RETRY_DIFFERENT);
 //            System.exit(1);
         }

@@ -380,7 +380,7 @@ work:
                     
                 // Database System Specific Exception Handling
                 } catch (SQLException ex) {
-                                       
+                    ex.printStackTrace();                    
                     //TODO: Handle acceptable error codes for every DBMS     
                     LOG.debug(next+ " " +  ex.getMessage()+" "+ex.getErrorCode()+ " - " +ex.getSQLState());
 
