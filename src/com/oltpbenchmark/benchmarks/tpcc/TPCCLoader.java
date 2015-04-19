@@ -92,14 +92,14 @@ public class TPCCLoader extends Loader{
 	private static java.util.Date startDate = null;
 	private static java.util.Date endDate = null;
 
-	private static Random gen;
-	private static int numWarehouses = 0;
-	private static String fileLocation = "";
+	protected static Random gen;
+	protected static int numWarehouses = 0;
+	protected static String fileLocation = "";
 	private static boolean outputFiles = false;
 	private static PrintWriter out = null;
 	private static long lastTimeMS = 0;
 
-	private static final int FIRST_UNPROCESSED_O_ID = 2101;
+	protected static final int FIRST_UNPROCESSED_O_ID = 2101;
 	
 	private PreparedStatement getInsertStatement(String tableName) throws SQLException {
         Table catalog_tbl = this.getTableCatalog(tableName);

@@ -70,7 +70,7 @@ public class TPCCBenchmark extends BenchmarkModule {
 
 	@Override
 	protected Loader makeLoaderImpl(Connection conn) throws SQLException {
-		return new TPCCLoader(this, conn);
+		return TPCCWorker.IS_MDTC ? new MDTCLoader(this, conn): new TPCCLoader(this, conn);
 	}
 
 	protected ArrayList<TPCCWorker> createTerminals() throws SQLException {

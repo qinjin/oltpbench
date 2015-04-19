@@ -59,15 +59,13 @@ public class TPCCWorker extends Worker {
 
     private static final AtomicInteger terminalId = new AtomicInteger(0);
 
-    private final TransactionClient txnClient;
     public static final boolean IS_MDTC = true;
+    public static final TransactionClient TXN_CLIENT = createTxnClient();
 
     public TPCCWorker(String terminalName, int terminalWarehouseID, int terminalDistrictLowerID, int terminalDistrictUpperID, TPCCBenchmark benchmarkModule, SimplePrinter terminalOutputArea,
             SimplePrinter errorOutputArea, int numWarehouses) throws SQLException {
         super(benchmarkModule, terminalId.getAndIncrement());
-
         this.terminalName = terminalName;
-
         this.terminalWarehouseID = terminalWarehouseID;
         this.terminalDistrictLowerID = terminalDistrictLowerID;
         this.terminalDistrictUpperID = terminalDistrictUpperID;
@@ -77,10 +75,13 @@ public class TPCCWorker extends Worker {
         this.terminalOutputArea = terminalOutputArea;
         this.errorOutputArea = errorOutputArea;
         this.numWarehouses = numWarehouses;
+    }
+
+    private static TransactionClient createTxnClient() {
         if (IS_MDTC) {
-            this.txnClient = new TransactionClient();
+            return new TransactionClient();
         } else {
-            this.txnClient = null;
+            return null;
         }
     }
 
@@ -118,7 +119,7 @@ public class TPCCWorker extends Worker {
     private TransactionStatus executeMDTCWork(TransactionType nextTransaction) {
         try {
             MDTCProcedure proc = (MDTCProcedure) this.getProcedure(nextTransaction.getProcedureClass());
-            proc.run(txnClient, gen, terminalWarehouseID, numWarehouses, terminalDistrictLowerID, terminalDistrictUpperID, this);
+            proc.run(TXN_CLIENT, gen, terminalWarehouseID, numWarehouses, terminalDistrictLowerID, terminalDistrictUpperID, this);
             transactionCount++;
         } catch (Throwable ex) {
             System.out.println("Warning: Rollback transaction for "+ex.getMessage());
