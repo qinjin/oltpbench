@@ -33,7 +33,7 @@ public class NewOrderExt extends MDTCProcedure {
     private static final String NEWORDER_GET_REMOTE_CNT = "NEWORDER_GET_REMOTE_CNT";
 
     public final String STMT_GET_CUST_CQL = "SELECT C_DISCOUNT, C_LAST, C_CREDIT" + "  FROM " + TPCCConstants.TABLENAME_CUSTOMER + " WHERE C_W_ID = ? AND C_D_ID = ? AND C_ID = ?";
-    public final String STMT_GET_WH_CQL = "SELECT W_TAX" + "  FROM " + TPCCConstants.TABLENAME_WAREHOUSE + " WHERE W_ID = ? AND C_D_ID = ? AND C_ID = ?";
+    public final String STMT_GET_WH_CQL = "SELECT W_TAX" + "  FROM " + TPCCConstants.TABLENAME_WAREHOUSE + " WHERE W_ID = ?";
     public final String STMT_GET_DIST_CQL = "SELECT D_NEXT_O_ID, D_TAX FROM " + TPCCConstants.TABLENAME_DISTRICT
                     + " WHERE D_W_ID = ?  AND D_ID = ?";
     public final String STMT_INSERT_NEW_ORDER_CQL = "INSERT INTO " + TPCCConstants.TABLENAME_NEWORDER + " (NO_O_ID, NO_D_ID, NO_W_ID) VALUES ( ?, ?, ?)";
@@ -121,7 +121,7 @@ public class NewOrderExt extends MDTCProcedure {
         try {
             // statement = new BoundStatement(stmtGetCustWhse).bind(1,
             // w_id).bind(2, w_id).bind(3, w_id).bind(4, w_id);
-            rs = txnClient.executePreparedStatement(NEWORDER_GET_WH_CQL, w_id, d_id, c_id);
+            rs = txnClient.executePreparedStatement(NEWORDER_GET_WH_CQL, w_id);
             if (rs.isEmpty())
                 throw new RuntimeException("W_ID=" + w_id + " C_D_ID=" + d_id + " C_ID=" + c_id + " not found!");
             resultRow = rs.iterator().next();
@@ -159,7 +159,7 @@ public class NewOrderExt extends MDTCProcedure {
             // update next_order_id first, but it might doesn't matter
             // statement = new BoundStatement(stmtUpdateDist).bind(1,
             // w_id).bind(2, w_id);
-            rs = txnClient.executePreparedStatement(NEWORDER_UPDATE_DIST_CQL, next_oder_id, w_id, d_id, c_id);
+            rs = txnClient.executePreparedStatement(NEWORDER_UPDATE_DIST_CQL, next_oder_id, w_id, d_id);
 
             o_id = d_next_o_id;
 
@@ -168,8 +168,7 @@ public class NewOrderExt extends MDTCProcedure {
             // statement = new BoundStatement(stmtInsertOOrder).bind(1,
             // w_id).bind(2, w_id).bind(3, w_id).bind(4, w_id).bind(6,
             // o_ol_cnt).bind(7, o_all_local);
-            rs = txnClient.executePreparedStatement(NEWORDER_INSERT_ORDER_CQL, w_id, w_id, w_id, w_id, o_ol_cnt, o_all_local);
-            // TODO: Timestamp in Cassandra?????
+            rs = txnClient.executePreparedStatement(NEWORDER_INSERT_ORDER_CQL, o_id, d_id, w_id, c_id, System.currentTimeMillis(), o_ol_cnt, o_all_local);
             // stmtInsertOOrder.setTimestamp(5, new
             // Timestamp(System.currentTimeMillis()));
             // insert ooder first]]
@@ -194,7 +193,7 @@ public class NewOrderExt extends MDTCProcedure {
                 ol_i_id = itemIDs[ol_number - 1];
                 ol_quantity = orderQuantities[ol_number - 1];
                 // statement = new BoundStatement(stmtGetItem).bind(1, ol_i_id);
-                rs = txnClient.executePreparedStatement(NEWORDER_GET_ITEM_CQL,  ol_supply_w_id, ol_i_id);
+                rs = txnClient.executePreparedStatement(NEWORDER_GET_ITEM_CQL, ol_i_id);
                 if (rs.isEmpty()) {
                     // This is (hopefully) an expected error: this is an
                     // expected new order rollback
@@ -325,7 +324,7 @@ public class NewOrderExt extends MDTCProcedure {
                 // o_id).bind(2, d_id).bind(3, w_id).bind(4, ol_number).bind(5,
                 // ol_i_id).bind(6, ol_supply_w_id).bind(7, ol_quantity)
                 // .bind(8, ol_amount).bind(9, ol_dist_info);
-                rs = txnClient.executePreparedStatement(NEWORDER_INSERT_ORDER_LINE_CQL, o_id, d_id, w_id, ol_number, ol_i_id, ol_supply_w_id, ol_quantity);
+                rs = txnClient.executePreparedStatement(NEWORDER_INSERT_ORDER_LINE_CQL, o_id, d_id, w_id, ol_number, ol_i_id, ol_supply_w_id, ol_quantity,ol_amount,ol_dist_info);
 
             } // end-for
 

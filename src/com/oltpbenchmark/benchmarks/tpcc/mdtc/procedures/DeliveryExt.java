@@ -27,7 +27,7 @@ public class DeliveryExt extends MDTCProcedure {
     private static final String DELIVERY_GET_DELIVERY_COUNT = "DELIVERY_GET_DELIVERY_COUNT";
     
     public static final String STMT_GET_ORDER_ID = "SELECT NO_O_ID FROM " + TPCCConstants.TABLENAME_NEWORDER + " WHERE NO_W_ID = ? AND NO_D_ID = ?";
-    public static final String STMT_DELETE_NEW_ORDER = "DELETE FROM " + TPCCConstants.TABLENAME_NEWORDER + " WHERE NO_W_ID = ? AND NO_D_ID = ?";
+    public static final String STMT_DELETE_NEW_ORDER = "DELETE FROM " + TPCCConstants.TABLENAME_NEWORDER + " WHERE NO_W_ID = ? AND NO_D_ID = ? AND NO_O_ID = ?";
     public static final String STMT_GET_CUST_ID = "SELECT O_C_ID" + " FROM " + TPCCConstants.TABLENAME_OPENORDER + " WHERE O_W_ID = ?" + " AND O_D_ID = ?" + " AND O_ID = ?";
     public static final String STMT_UPDATE_CARRIER_ID = "UPDATE " + TPCCConstants.TABLENAME_OPENORDER + " SET O_CARRIER_ID = ?" + " WHERE O_W_ID = ?" + " AND O_D_ID = ?" + " AND O_ID = ?";
     public static final String STMT_UPDATE_DELIVERY_DATE = "UPDATE " + TPCCConstants.TABLENAME_ORDERLINE + " SET OL_DELIVERY_D = ?" + " WHERE OL_W_ID = ?" + " AND OL_D_ID = ?" + " AND OL_O_ID = ?";
@@ -101,7 +101,7 @@ public class DeliveryExt extends MDTCProcedure {
 
             // statement = new BoundStatement(delivDeleteNewOrder).bind(1,
             // no_o_id).bind(2, d_id).bind(3, w_id);
-            rs = txnClient.executePreparedStatement(DELIVERY_DELETE_NEW_ORDER, no_o_id, w_id, d_id);
+            rs = txnClient.executePreparedStatement(DELIVERY_DELETE_NEW_ORDER, w_id, d_id, no_o_id);
             if (!rs.isEmpty()) {
                 // This code used to run in a loop in an attempt to make this
                 // work

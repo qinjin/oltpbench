@@ -19,7 +19,7 @@ public class StockLevelExt extends MDTCProcedure {
     private static final String SL_GET_DIST_ORDER = "SL_GET_DIST_ORDER";
 
     private final String STMT_GET_DIST_ORDER = "SELECT D_NEXT_O_ID FROM DISTRICT WHERE D_W_ID = ? AND D_ID = ?";
-    private final String STMT_GET_COUNT_STOCK = "SELECT COUNT(DISTINCT (S_I_ID)) AS STOCK_COUNT" + " FROM " + TPCCConstants.TABLENAME_ORDERLINE + ", " + TPCCConstants.TABLENAME_STOCK
+    private final String STMT_GET_COUNT_STOCK = "SELECT S_I_ID FROM " + TPCCConstants.TABLENAME_ORDERLINE + ", " + TPCCConstants.TABLENAME_STOCK
             + " WHERE OL_W_ID = ?" + " AND OL_D_ID = ?" + " AND OL_O_ID < ?" + " AND OL_O_ID >= ? - 20" + " AND S_W_ID = ?" + " AND S_I_ID = OL_I_ID" + " AND S_QUANTITY < ?";
 
     public void run(TransactionClient txnClient, Random gen, int terminalWarehouseID, int numWarehouses, int terminalDistrictLowerID, int terminalDistrictUpperID, TPCCWorker w) {
@@ -66,8 +66,7 @@ public class StockLevelExt extends MDTCProcedure {
         rs = txnClient.executePreparedStatement(SL_GET_COUNT_STOCK, w_id, d_id, o_id, w_id, threshold);
         if (!rs.iterator().hasNext())
             throw new RuntimeException("OL_W_ID=" + w_id + " OL_D_ID=" + d_id + " OL_O_ID=" + o_id + " not found!");
-        resultRow = rs.iterator().next();
-        stock_count = resultRow.getInt("STOCK_COUNT");
+        stock_count = rs.allRows().size();
 
         rs = null;
 
