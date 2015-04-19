@@ -109,7 +109,7 @@ public class TPCCWorker extends Worker {
             System.err.println("We have been invoked with an INVALID transactionType?!");
             throw new RuntimeException("Bad transaction type = " + nextTransaction);
         } catch (RuntimeException ex) {
-            LOG.warn("Warning: Rollback transaction for "+ex.getMessage());
+            LOG.warn("Warning: Rollback transaction: "+ex.getMessage());
             conn.rollback();
             return (TransactionStatus.RETRY_DIFFERENT);
         }
@@ -124,7 +124,8 @@ public class TPCCWorker extends Worker {
             proc.run(TXN_CLIENT, gen, terminalWarehouseID, numWarehouses, terminalDistrictLowerID, terminalDistrictUpperID, this);
             transactionCount++;
         } catch (Throwable ex) {
-            LOG.warn("Warning: Rollback transaction for "+ex.getMessage());
+            ex.printStackTrace();
+            LOG.warn("Warning: Rollback transaction: "+ex.getMessage());
             return (TransactionStatus.RETRY_DIFFERENT);
 //            System.exit(1);
         }

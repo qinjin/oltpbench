@@ -28,7 +28,7 @@ public class OrderStatusExt extends MDTCProcedure {
     private static final String OS_GET_ORDER_LINES = "OS_GET_ORDER_LINES";
     private static final String OS_GET_NEW_EST_ORDER = "OS_GET_NEW_EST_ORDER";
 
-    private final String STMT_GET_NEW_EST_ORDER = "SELECT O_ID, O_CARRIER_ID, O_ENTRY_D FROM " + TPCCConstants.TABLENAME_OPENORDER + " WHERE O_W_ID = ?" + " AND O_D_ID = ? AND O_C_ID = ?";
+    private final String STMT_GET_NEW_EST_ORDER = "SELECT O_ID, O_CARRIER_ID, O_ENTRY_D FROM " + TPCCConstants.TABLENAME_OPENORDER + " WHERE O_W_ID = ? AND O_D_ID = ? AND O_C_ID = ?";
     private final String STMT_GET_ORDER_LINES = "SELECT OL_I_ID, OL_SUPPLY_W_ID, OL_QUANTITY," + " OL_AMOUNT, OL_DELIVERY_D" + " FROM " + TPCCConstants.TABLENAME_ORDERLINE + " WHERE OL_O_ID = ?"
             + " AND OL_D_ID =?" + " AND OL_W_ID = ?";
     private final String STMT_GET_CUST = "SELECT C_FIRST, C_MIDDLE, C_LAST, C_STREET_1, C_STREET_2, " + "C_CITY, C_STATE, C_ZIP, C_PHONE, C_CREDIT, C_CREDIT_LIM, "
