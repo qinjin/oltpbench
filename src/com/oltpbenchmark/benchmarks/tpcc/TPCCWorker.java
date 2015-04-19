@@ -31,6 +31,8 @@ import java.sql.SQLException;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.log4j.Logger;
+
 import mdtc.api.transaction.client.TransactionClient;
 
 import com.oltpbenchmark.api.Procedure.UserAbortException;
@@ -42,7 +44,7 @@ import com.oltpbenchmark.types.TransactionStatus;
 import com.oltpbenchmark.util.SimplePrinter;
 
 public class TPCCWorker extends Worker {
-
+    private static final Logger LOG = Logger.getLogger(TPCCWorker.class);
     // private TransactionTypes transactionTypes;
 
     private String terminalName;
@@ -107,7 +109,7 @@ public class TPCCWorker extends Worker {
             System.err.println("We have been invoked with an INVALID transactionType?!");
             throw new RuntimeException("Bad transaction type = " + nextTransaction);
         } catch (RuntimeException ex) {
-            System.out.println("Warning: Rollback transaction for "+ex.getMessage());
+            LOG.warn("Warning: Rollback transaction for "+ex.getMessage());
             conn.rollback();
             return (TransactionStatus.RETRY_DIFFERENT);
         }
@@ -122,7 +124,7 @@ public class TPCCWorker extends Worker {
             proc.run(TXN_CLIENT, gen, terminalWarehouseID, numWarehouses, terminalDistrictLowerID, terminalDistrictUpperID, this);
             transactionCount++;
         } catch (Throwable ex) {
-            System.out.println("Warning: Rollback transaction for "+ex.getMessage());
+            LOG.warn("Warning: Rollback transaction for "+ex.getMessage());
             return (TransactionStatus.RETRY_DIFFERENT);
 //            System.exit(1);
         }

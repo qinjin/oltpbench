@@ -77,6 +77,8 @@ public class MDTCLoader extends TPCCLoader {
             warehouse.w_state = TPCCUtil.randomStr(3).toUpperCase();
             warehouse.w_zip = "123456789";
 
+            LOG.debug("Writing warehouse record " + i + " of " + whseKount);
+
             String statement = "INSERT INTO " + TPCCConstants.TABLENAME_WAREHOUSE + " (W_ID, W_YTD, W_TAX, W_NAME, W_STREET_1, W_STREET_2, W_CITY, W_STATE, W_ZIP) VALUES (" + warehouse.w_id + ", "
                     + warehouse.w_ytd + ", " + warehouse.w_tax + ", '" + warehouse.w_name + "', '" + warehouse.w_street_1 + "', '" + warehouse.w_street_2 + "', '" + warehouse.w_city + "', '"
                     + warehouse.w_state + "', '" + warehouse.w_zip + "')";
@@ -120,12 +122,15 @@ public class MDTCLoader extends TPCCLoader {
 
             k++;
 
-            LOG.debug("Writing record " + k + " of " + t);
-            String statement = "INSERT INTO " + TPCCConstants.TABLENAME_ITEM + " (I_ID, I_NAME, I_PRICE, I_DATA, I_IM_ID) VALUES (" + item.i_id + ",'" + item.i_name + "', " + item.i_price + ", '" + item.i_data + "', " + item.i_im_id + ")";
+            if (k % 10000 == 0) {
+                LOG.debug("Writing item record " + k + " of " + t);
+            }
+
+            String statement = "INSERT INTO " + TPCCConstants.TABLENAME_ITEM + " (I_ID, I_NAME, I_PRICE, I_DATA, I_IM_ID) VALUES (" + item.i_id + ",'" + item.i_name + "', " + item.i_price + ", '"
+                    + item.i_data + "', " + item.i_im_id + ")";
             TPCCWorker.TXN_CLIENT.executeStatement(statement);
         }
-        LOG.debug("End Item Load for records " + k
-                + " of " + t);
+        LOG.debug("End Item Load for records " + k + " of " + t);
         return k;
     }
 
@@ -136,7 +141,7 @@ public class MDTCLoader extends TPCCLoader {
         int len = 0;
         int startORIGINAL = 0;
         t = (whseKount * itemKount);
-        LOG.debug("\nStart Stock Load for " + t + " units...");
+        LOG.debug("\nStart Stock Load for " + t + " stocks...");
         Stock stock = new Stock();
         for (int i = 1; i <= itemKount; i++) {
             for (int w = 1; w <= whseKount; w++) {
@@ -173,12 +178,16 @@ public class MDTCLoader extends TPCCLoader {
                 stock.s_dist_10 = TPCCUtil.randomStr(24);
 
                 k++;
-
-                String statement = "INSERT INTO " + TPCCConstants.TABLENAME_STOCK + " VALUES (" + stock.s_w_id + "," + stock.s_i_id + ", " + stock.s_quantity + ", " + stock.s_ytd + ", "
-                        + stock.s_order_cnt + ", " + stock.s_remote_cnt + ", " + stock.s_data + ", " + stock.s_dist_01 + ", " + stock.s_dist_02 + ", " + stock.s_dist_03 + ", " + stock.s_dist_04
-                        + ", " + stock.s_dist_05 + ", " + stock.s_dist_06 + ", " + stock.s_dist_07 + ", " + stock.s_dist_08 + ", " + stock.s_dist_09 + ", " + stock.s_dist_10 + ")";
+                String statement = "INSERT INTO "
+                        + TPCCConstants.TABLENAME_STOCK
+                        + " (S_W_ID, S_I_ID, S_QUANTITY, S_YTD, S_ORDER_CNT, S_REMOTE_CNT, S_DATA, S_DIST_01, S_DIST_02, S_DIST_03, S_DIST_04, S_DIST_05, S_DIST_06, S_DIST_07, S_DIST_08, S_DIST_09, S_DIST_10) VALUES ("
+                        + stock.s_w_id + "," + stock.s_i_id + ", " + stock.s_quantity + ", " + stock.s_ytd + ", " + stock.s_order_cnt + ", " + stock.s_remote_cnt + ", '" + stock.s_data + "', '"
+                        + stock.s_dist_01 + "', '" + stock.s_dist_02 + "', '" + stock.s_dist_03 + "', '" + stock.s_dist_04 + "', '" + stock.s_dist_05 + "', '" + stock.s_dist_06 + "', '"
+                        + stock.s_dist_07 + "', '" + stock.s_dist_08 + "', '" + stock.s_dist_09 + "', '" + stock.s_dist_10 + "')";
                 TPCCWorker.TXN_CLIENT.executeStatement(statement);
-                LOG.debug("Writing record " + k + " of " + t);
+                if (k % 20000 == 0) {
+                    LOG.debug("Writing stock record " + k + " of " + t);
+                }
             }
         }
 
@@ -212,15 +221,17 @@ public class MDTCLoader extends TPCCLoader {
 
                 k++;
 
-                String statement = "INSERT INTO " + TPCCConstants.TABLENAME_DISTRICT + " VALUES (" + district.d_w_id + "," + district.d_id + ", " + district.d_ytd + ", " + district.d_tax + ", "
-                        + district.d_next_o_id + ", " + district.d_name + ", " + district.d_street_1 + ", " + district.d_street_2 + ", " + district.d_city + ", " + district.d_state + ", "
-                        + district.d_zip + ")";
+                String statement = "INSERT INTO " + TPCCConstants.TABLENAME_DISTRICT + " (D_W_ID, D_ID, D_YTD, D_TAX, D_NEXT_O_ID, D_NAME, D_STREET_1, D_STREET_2, D_CITY, D_STATE, D_ZIP) VALUES ("
+                        + district.d_w_id + "," + district.d_id + ", " + district.d_ytd + ", " + district.d_tax + ", " + district.d_next_o_id + ", '" + district.d_name + "', '" + district.d_street_1
+                        + "', '" + district.d_street_2 + "', '" + district.d_city + "', '" + district.d_state + "', '" + district.d_zip + "')";
                 TPCCWorker.TXN_CLIENT.executeStatement(statement);
-                LOG.debug("Writing record " + k + " of " + t);
+                if(k%10==0){
+                    LOG.debug("Writing district record " + k + " of " + t);
+                }
             }
         }
 
-        LOG.debug("End District Load");
+        LOG.debug("End District Load.");
         return k;
     }
 
@@ -237,14 +248,11 @@ public class MDTCLoader extends TPCCLoader {
             for (int d = 1; d <= distWhseKount; d++) {
                 for (int c = 1; c <= custDistKount; c++) {
                     Timestamp sysdate = new java.sql.Timestamp(System.currentTimeMillis());
-
                     customer.c_id = c;
                     customer.c_d_id = d;
                     customer.c_w_id = w;
-
                     // discount is random between [0.0000 ... 0.5000]
                     customer.c_discount = (float) (TPCCUtil.randomNumber(1, 5000, gen) / 10000.0);
-
                     if (TPCCUtil.randomNumber(1, 100, gen) <= 10) {
                         customer.c_credit = "BC"; // 10% Bad Credit
                     } else {
@@ -257,21 +265,17 @@ public class MDTCLoader extends TPCCLoader {
                     }
                     customer.c_first = TPCCUtil.randomStr(TPCCUtil.randomNumber(8, 16, gen));
                     customer.c_credit_lim = 50000;
-
                     customer.c_balance = -10;
                     customer.c_ytd_payment = 10;
                     customer.c_payment_cnt = 1;
                     customer.c_delivery_cnt = 0;
-
                     customer.c_street_1 = TPCCUtil.randomStr(TPCCUtil.randomNumber(10, 20, gen));
                     customer.c_street_2 = TPCCUtil.randomStr(TPCCUtil.randomNumber(10, 20, gen));
                     customer.c_city = TPCCUtil.randomStr(TPCCUtil.randomNumber(10, 20, gen));
                     customer.c_state = TPCCUtil.randomStr(3).toUpperCase();
                     // TPC-C 4.3.2.7: 4 random digits + "11111"
                     customer.c_zip = TPCCUtil.randomNStr(4) + "11111";
-
                     customer.c_phone = TPCCUtil.randomNStr(16);
-
                     customer.c_since = sysdate;
                     customer.c_middle = "OE";
                     customer.c_data = TPCCUtil.randomStr(TPCCUtil.randomNumber(300, 500, gen));
@@ -286,16 +290,25 @@ public class MDTCLoader extends TPCCLoader {
                     history.h_data = TPCCUtil.randomStr(TPCCUtil.randomNumber(10, 24, gen));
 
                     k = k + 2;
-
-                    String custStatement = "INSERT INTO " + TPCCConstants.TABLENAME_CUSTOMER + " VALUES (" + customer.c_w_id + "," + customer.c_d_id + ", " + customer.c_id + ", "
-                            + customer.c_discount + ", " + customer.c_credit + ", " + customer.c_last + ", " + customer.c_first + ", " + customer.c_credit_lim + ", " + customer.c_balance + ", "
-                            + customer.c_ytd_payment + ", " + customer.c_payment_cnt + ", " + customer.c_delivery_cnt + ", " + customer.c_street_1 + ", " + customer.c_street_2 + ", "
-                            + customer.c_city + ", " + customer.c_state + ", " + customer.c_zip + ", " + customer.c_phone + ")";
+                    String custStatement = "INSERT INTO "
+                            + TPCCConstants.TABLENAME_CUSTOMER
+                            + " (C_W_ID, C_D_ID, C_ID, C_DISCOUNT, C_CREDIT, C_LAST, C_FIRST, C_CREDIT_LIM, C_BALANCE, C_YTD_PAYMENT, C_PAYMENT_CNT, C_DELIVERY_CNT, C_STREET_1, C_STREET_2, C_CITY, C_STATE, C_ZIP, C_PHONE, C_SINCE, C_MIDDLE, C_DATA) VALUES ("
+                            + customer.c_w_id + "," + customer.c_d_id + ", " + customer.c_id + ", " + customer.c_discount + ", '" + customer.c_credit + "', '" + customer.c_last + "', '"
+                            + customer.c_first + "', " + customer.c_credit_lim + ", " + customer.c_balance + ", " + customer.c_ytd_payment + ", " + customer.c_payment_cnt + ", "
+                            + customer.c_delivery_cnt + ", '" + customer.c_street_1 + "', '" + customer.c_street_2 + "', '" + customer.c_city + "', '" + customer.c_state + "', '" + customer.c_zip
+                            + "', '" + customer.c_phone + "', " + customer.c_since.getTime() + ", '" + customer.c_middle + "', '" + customer.c_data + "')";
                     TPCCWorker.TXN_CLIENT.executeStatement(custStatement);
+                    if (k % 20000 == 0) {
+                        LOG.debug("Writing customer record " + k + " of " + t);
+                    }
 
-                    String historyStatement = "INSERT INTO " + TPCCConstants.TABLENAME_HISTORY + " VALUES (" + history.h_c_id + "," + history.h_c_d_id + ", " + history.h_c_w_id + ", "
-                            + history.h_d_id + ", " + history.h_w_id + ", " + history.h_date + ", " + history.h_amount + ", " + history.h_data + ")";
+                    String historyStatement = "INSERT INTO " + TPCCConstants.TABLENAME_HISTORY + " (H_C_ID, H_C_D_ID, H_C_W_ID, H_D_ID, H_W_ID, H_DATE, H_AMOUNT, H_DATA) VALUES (" + history.h_c_id
+                            + "," + history.h_c_d_id + ", " + history.h_c_w_id + ", " + history.h_d_id + ", " + history.h_w_id + ", " + history.h_date.getTime() + ", " + history.h_amount + ", '"
+                            + history.h_data + "')";
                     TPCCWorker.TXN_CLIENT.executeStatement(historyStatement);
+                    if (k % 20000 == 0) {
+                        LOG.debug("Writing history record " + k + " of " + t);
+                    }
                 }
             }
         }
@@ -318,7 +331,6 @@ public class MDTCLoader extends TPCCLoader {
         LOG.debug("\nStart Order-Line-New Load for approx " + t + " rows...");
 
         for (int w = 1; w <= whseKount; w++) {
-
             for (int d = 1; d <= distWhseKount; d++) {
                 // TPC-C 4.3.3.1: o_c_id must be a permutation of [1, 3000]
                 int[] c_ids = new int[custDistKount];
@@ -337,7 +349,6 @@ public class MDTCLoader extends TPCCLoader {
                 }
 
                 for (int c = 1; c <= custDistKount; c++) {
-
                     oorder.o_id = c;
                     oorder.o_w_id = w;
                     oorder.o_d_id = d;
@@ -354,10 +365,13 @@ public class MDTCLoader extends TPCCLoader {
                     oorder.o_entry_d = System.currentTimeMillis();
 
                     k++;
-
-                    String openOrderStatement = "INSERT INTO " + TPCCConstants.TABLENAME_OPENORDER + " VALUES (" + oorder.o_w_id + "," + oorder.o_d_id + ", " + oorder.o_id + ", " + oorder.o_c_id
-                            + ", " + oorder.o_carrier_id + ", " + oorder.o_ol_cnt + ", " + new java.sql.Timestamp(oorder.o_entry_d).getTime() + ")";
+                    String openOrderStatement = "INSERT INTO " + TPCCConstants.TABLENAME_OPENORDER + " (O_W_ID, O_D_ID, O_ID, O_C_ID, O_CARRIER_ID, O_OL_CNT, O_ALL_LOCAL, O_ENTRY_D) VALUES ("
+                            + oorder.o_w_id + "," + oorder.o_d_id + ", " + oorder.o_id + ", " + oorder.o_c_id + ", " + oorder.o_carrier_id + ", " + oorder.o_ol_cnt + ", " + oorder.o_all_local + ", "
+                            + oorder.o_entry_d + ")";
                     TPCCWorker.TXN_CLIENT.executeStatement(openOrderStatement);
+                    if (k % 50000 == 0) {
+                        LOG.debug("Writing openorder records " + k + " of " + t);
+                    }
 
                     // 900 rows in the NEW-ORDER table corresponding to the
                     // last
@@ -366,16 +380,18 @@ public class MDTCLoader extends TPCCLoader {
                     // NO_O_ID between 2,101 and 3,000)
 
                     if (c >= FIRST_UNPROCESSED_O_ID) {
-
                         new_order.no_w_id = w;
                         new_order.no_d_id = d;
                         new_order.no_o_id = c;
 
                         k++;
-
-                        String newOrderStatement = "INSERT INTO " + TPCCConstants.TABLENAME_NEWORDER + " VALUES (" + new_order.no_w_id + "," + new_order.no_d_id + ", " + new_order.no_o_id + ")";
+                        String newOrderStatement = "INSERT INTO " + TPCCConstants.TABLENAME_NEWORDER + " (NO_W_ID, NO_D_ID, NO_O_ID) VALUES (" + new_order.no_w_id + "," + new_order.no_d_id + ", "
+                                + new_order.no_o_id + ")";
                         TPCCWorker.TXN_CLIENT.executeStatement(newOrderStatement);
-                    } // end new order
+                        if (k % 50000 == 0) {
+                            LOG.debug("Writing neworder records " + k + " of " + t);
+                        }
+                    }
 
                     for (int l = 1; l <= oorder.o_ol_cnt; l++) {
                         order_line.ol_w_id = w;
@@ -397,19 +413,20 @@ public class MDTCLoader extends TPCCLoader {
                         order_line.ol_dist_info = TPCCUtil.randomStr(24);
 
                         k++;
-
-                        String orderLineStatement = "INSERT INTO " + TPCCConstants.TABLENAME_ORDERLINE + " VALUES (" + order_line.ol_w_id + "," + order_line.ol_d_id + ", " + order_line.ol_o_id + ", "
-                                + order_line.ol_number + ", " + order_line.ol_i_id + ", " + order_line.ol_delivery_d == null ? null : new Timestamp(order_line.ol_delivery_d).getTime() + ", "
-                                + order_line.ol_amount + ", " + order_line.ol_supply_w_id + ", " + order_line.ol_quantity + ", " + order_line.ol_dist_info + ")";
+                        String orderLineStatement = "INSERT INTO " + TPCCConstants.TABLENAME_ORDERLINE
+                                + " (OL_W_ID, OL_D_ID, OL_O_ID, OL_NUMBER, OL_I_ID, OL_DELIVERY_D, OL_AMOUNT, OL_SUPPLY_W_ID, OL_QUANTITY, OL_DIST_INFO) VALUES (" + order_line.ol_w_id + ","
+                                + order_line.ol_d_id + ", " + order_line.ol_o_id + ", " + order_line.ol_number + ", " + order_line.ol_i_id + ", " + order_line.ol_delivery_d + ", "
+                                + order_line.ol_amount + ", " + order_line.ol_supply_w_id + ", " + order_line.ol_quantity + ", '" + order_line.ol_dist_info + "')";
                         TPCCWorker.TXN_CLIENT.executeStatement(orderLineStatement);
+                        if (k % 50000 == 0) {
+                            LOG.debug("Writing orderline records " + k + " of " + t);
+                        }
                     }
                 }
             }
         }
 
-        LOG.debug("  Writing final records " + k + " of " + t);
-        LOG.debug("End Orders Load");
-
+        LOG.debug("End Orders Load. Loaded " + k + " of " + t);
         return k;
     }
 
