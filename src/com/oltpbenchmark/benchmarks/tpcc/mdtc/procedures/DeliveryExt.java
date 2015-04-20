@@ -70,7 +70,7 @@ public class DeliveryExt extends MDTCProcedure {
             // statement = new BoundStatement(delivGetOrderId).bind(1,
             // d_id).bind(2, w_id);
             rs = txnClient.executePreparedStatement(DELIVERY_GET_ORDER_ID, w_id, d_id);
-            if (!rs.iterator().hasNext()) {
+            if (rs.isEmpty()) {
                 // This district has no new orders; this can happen but should
                 // be rare
                 continue;

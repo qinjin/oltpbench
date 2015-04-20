@@ -139,13 +139,13 @@ public class PaymentExt extends MDTCProcedure {
         w_name = resultRow.getString("W_NAME");
         rs = null;
 
-        int d_ytd;
+        float d_ytd;
         // Read before write
         rs = txnClient.executePreparedStatement(PAY_GET_YTD, w_id, d_id);
         if (!rs.iterator().hasNext())
             throw new RuntimeException("D_ID=" + d_id + " D_W_ID=" + w_id + " not found!");
         resultRow = rs.iterator().next();
-        d_ytd = resultRow.getInt("D_YTD");
+        d_ytd = resultRow.getFloat("D_YTD");
 
         // statement = new BoundStatement(payUpdateDist).bind(1,
         // h_amount).bind(2, w_id).bind(3, d_id);

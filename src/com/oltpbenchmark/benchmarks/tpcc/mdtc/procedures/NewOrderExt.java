@@ -246,7 +246,7 @@ public class NewOrderExt extends MDTCProcedure {
                     s_remote_cnt_increment = 1;
                 }
 
-                double stock_ytd;
+                float stock_ytd;
                 int oder_cnt;
                 int remote_cnt;
                 // Read before write!
@@ -255,7 +255,7 @@ public class NewOrderExt extends MDTCProcedure {
                     throw new RuntimeException("S_I_ID=" + ol_i_id + " S_W_ID=" + ol_supply_w_id + " not found!");
                 }
                 resultRow = rs.iterator().next();
-                stock_ytd = resultRow.getDouble("S_YTD");
+                stock_ytd = resultRow.getFloat("S_YTD");
 
                 rs = txnClient.executePreparedStatement(NEWORDER_GET_ORDER_CNT, ol_supply_w_id, ol_i_id);
                 if (rs.isEmpty()) {
