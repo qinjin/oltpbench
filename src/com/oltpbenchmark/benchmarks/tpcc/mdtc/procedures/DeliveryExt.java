@@ -117,7 +117,7 @@ public class DeliveryExt extends MDTCProcedure {
 
             // statement = new BoundStatement(delivGetCustId).bind(1,
             // no_o_id).bind(2, d_id).bind(3, w_id);
-            rs = txnClient.executePreparedStatement(DELIVERY_GET_CUST_ID, w_id, no_o_id, d_id);
+            rs = txnClient.executePreparedStatement(DELIVERY_GET_CUST_ID, w_id, d_id, no_o_id);
             if (rs.isEmpty())
                 throw new RuntimeException("O_ID=" + no_o_id + " O_D_ID=" + d_id + " O_W_ID=" + w_id + " not found!");
             resultRow = rs.iterator().next();
@@ -126,7 +126,7 @@ public class DeliveryExt extends MDTCProcedure {
 
             // statement = new BoundStatement(delivUpdateCarrierId).bind(1,
             // o_carrier_id).bind(2, no_o_id).bind(3, d_id).bind(4, w_id);
-            rs = txnClient.executePreparedStatement(DELIVERY_UPDATE_CARRIER_ID, o_carrier_id, w_id, no_o_id, d_id);
+            rs = txnClient.executePreparedStatement(DELIVERY_UPDATE_CARRIER_ID, o_carrier_id, w_id, d_id, no_o_id);
 
             // statement = new BoundStatement(delivUpdateDeliveryDate).bind(1,
             // System.currentTimeMillis()).bind(2, no_o_id).bind(3,
