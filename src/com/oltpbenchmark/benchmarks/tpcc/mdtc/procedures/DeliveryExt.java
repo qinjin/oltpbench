@@ -25,12 +25,14 @@ public class DeliveryExt extends MDTCProcedure {
     private static final String DELIVERY_GET_ORDER_ID = "DELIVERY_GET_ORDER_ID";
     private static final String DELIVERY_GET_CUST_BAN = "DELIVERY_GET_CUST_BAN";
     private static final String DELIVERY_GET_DELIVERY_COUNT = "DELIVERY_GET_DELIVERY_COUNT";
+    private static final String DELIVERY_GET_OL_NUMBER = "DELIVERY_GET_OL_NUMBER";
     
     public static final String STMT_GET_ORDER_ID = "SELECT NO_O_ID FROM " + TPCCConstants.TABLENAME_NEWORDER + " WHERE NO_W_ID = ? AND NO_D_ID = ?";
     public static final String STMT_DELETE_NEW_ORDER = "DELETE FROM " + TPCCConstants.TABLENAME_NEWORDER + " WHERE NO_W_ID = ? AND NO_D_ID = ? AND NO_O_ID = ?";
     public static final String STMT_GET_CUST_ID = "SELECT O_C_ID" + " FROM " + TPCCConstants.TABLENAME_OPENORDER + " WHERE O_W_ID = ?" + " AND O_D_ID = ?" + " AND O_ID = ?";
     public static final String STMT_UPDATE_CARRIER_ID = "UPDATE " + TPCCConstants.TABLENAME_OPENORDER + " SET O_CARRIER_ID = ?" + " WHERE O_W_ID = ?" + " AND O_D_ID = ?" + " AND O_ID = ?";
-    public static final String STMT_UPDATE_DELIVERY_DATE = "UPDATE " + TPCCConstants.TABLENAME_ORDERLINE + " SET OL_DELIVERY_D = ?" + " WHERE OL_W_ID = ?" + " AND OL_D_ID = ?" + " AND OL_O_ID = ?";
+    public static final String STMT_UPDATE_DELIVERY_DATE = "UPDATE " + TPCCConstants.TABLENAME_ORDERLINE + " SET OL_DELIVERY_D = ?" + " WHERE OL_W_ID = ?" + " AND OL_D_ID = ?" + " AND OL_O_ID = ? AND OL_NUMBER = ?";
+    public static final String STMT_GET_OL_NUMBER = "SELECT OL_NUMBER FROM " + TPCCConstants.TABLENAME_ORDERLINE +" WHERE OL_W_ID = ?" + " AND OL_D_ID = ?" + " AND OL_O_ID = ?";
     public static final String STMT_SUM_ORDER_AMOUNT = "SELECT SUM(OL_AMOUNT) AS OL_TOTAL" + " FROM " + TPCCConstants.TABLENAME_ORDERLINE + "" + " WHERE OL_W_ID = ?" + " AND OL_D_ID = ?"
             + " AND OL_O_ID = ?";
     public static final String STMT_UPDATE_CUST_BAL_DELIVERY_COUNT = "UPDATE " + TPCCConstants.TABLENAME_CUSTOMER + " SET C_BALANCE = ?" + ", C_DELIVERY_CNT = ?"
@@ -50,6 +52,7 @@ public class DeliveryExt extends MDTCProcedure {
         txnClient.setPrepareStatement(DELIVERY_GET_CUST_ID, STMT_GET_CUST_ID);
         txnClient.setPrepareStatement(DELIVERY_UPDATE_CARRIER_ID, STMT_UPDATE_CARRIER_ID);
         txnClient.setPrepareStatement(DELIVERY_UPDATE_DELIVERY_DATE, STMT_UPDATE_DELIVERY_DATE);
+        txnClient.setPrepareStatement(DELIVERY_GET_OL_NUMBER, STMT_GET_OL_NUMBER);
         txnClient.setPrepareStatement(DELIVERY_SUM_ORDER_AMOUNT, STMT_SUM_ORDER_AMOUNT);
         txnClient.setPrepareStatement(DELIVERY_UPDATE_CUST_BAL_DELIVERY_COUNT, STMT_UPDATE_CUST_BAL_DELIVERY_COUNT);
         txnClient.setPrepareStatement(DELIVERY_GET_CUST_BAN, STMT_GET_CUST_BAN);
@@ -128,10 +131,13 @@ public class DeliveryExt extends MDTCProcedure {
             // o_carrier_id).bind(2, no_o_id).bind(3, d_id).bind(4, w_id);
             rs = txnClient.executePreparedStatement(DELIVERY_UPDATE_CARRIER_ID, o_carrier_id, w_id, d_id, no_o_id);
 
-            // statement = new BoundStatement(delivUpdateDeliveryDate).bind(1,
-            // System.currentTimeMillis()).bind(2, no_o_id).bind(3,
-            // d_id).bind(4, w_id);
-            rs = txnClient.executePreparedStatement(DELIVERY_UPDATE_DELIVERY_DATE, System.currentTimeMillis(), w_id, d_id, no_o_id);
+            rs = txnClient.executePreparedStatement(DELIVERY_GET_OL_NUMBER, w_id, d_id, no_o_id);
+            for(Row row : rs.allRows()){
+                // statement = new BoundStatement(delivUpdateDeliveryDate).bind(1,
+                // System.currentTimeMillis()).bind(2, no_o_id).bind(3,
+                // d_id).bind(4, w_id);
+                rs = txnClient.executePreparedStatement(DELIVERY_UPDATE_DELIVERY_DATE, System.currentTimeMillis(), w_id, d_id, no_o_id, row.getInt("OL_NUMBER"));
+            }
 
             // statement = new BoundStatement(delivSumOrderAmount).bind(1,
             // no_o_id).bind(2, d_id).bind(3, w_id);
@@ -145,13 +151,13 @@ public class DeliveryExt extends MDTCProcedure {
             float cust_ban;
             int delivery_count;
             //Read before write!
-            rs = txnClient.executePreparedStatement(STMT_GET_CUST_BAN, w_id, d_id, c_id);
+            rs = txnClient.executePreparedStatement(DELIVERY_GET_CUST_BAN, w_id, d_id, c_id);
             if (rs.isEmpty())
                 throw new RuntimeException("C_ID=" + c_id + " C_W_ID=" + w_id + " C_D_ID=" + d_id + " not found!");
             resultRow = rs.iterator().next();
             cust_ban = resultRow.getFloat("C_BALANCE");
             
-            rs = txnClient.executePreparedStatement(STMT_GET_DELIVERY_COUNT, w_id, d_id, c_id);
+            rs = txnClient.executePreparedStatement(DELIVERY_GET_DELIVERY_COUNT, w_id, d_id, c_id);
             if (rs.isEmpty())
                 throw new RuntimeException("C_ID=" + c_id + " C_W_ID=" + w_id + " C_D_ID=" + d_id + " not found!");
             resultRow = rs.iterator().next();
