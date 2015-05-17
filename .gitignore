@@ -20,3 +20,9 @@ output.res
 target
 /outputfile.*
 /log
+/.DS_Store
+/outfile.ben.cnf
+/outfile.db.cnf
+/outfile.raw
+/outfile.res
+/outfile.summary
