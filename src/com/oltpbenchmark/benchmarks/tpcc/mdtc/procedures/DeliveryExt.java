@@ -16,16 +16,16 @@ import com.oltpbenchmark.benchmarks.tpcc.TPCCWorker;
 
 public class DeliveryExt extends MDTCProcedure {
     
-    private static final String DELIVERY_UPDATE_CUST_BAL_DELIVERY_COUNT = "DELIVERY_UPDATE_CUST_BAL_DELIVERY_COUNT";
-    private static final String DELIVERY_SUM_ORDER_AMOUNT = "DELIVERY_SUM_ORDER_AMOUNT";
-    private static final String DELIVERY_UPDATE_DELIVERY_DATE = "DELIVERY_UPDATE_DELIVERY_DATE";
-    private static final String DELIVERY_UPDATE_CARRIER_ID = "DELIVERY_UPDATE_CARRIER_ID";
-    private static final String DELIVERY_GET_CUST_ID = "DELIVERY_GET_CUST_ID";
-    private static final String DELIVERY_DELETE_NEW_ORDER = "DELIVERY_DELETE_NEW_ORDER";
-    private static final String DELIVERY_GET_ORDER_ID = "DELIVERY_GET_ORDER_ID";
-    private static final String DELIVERY_GET_CUST_BAN = "DELIVERY_GET_CUST_BAN";
-    private static final String DELIVERY_GET_DELIVERY_COUNT = "DELIVERY_GET_DELIVERY_COUNT";
-    private static final String DELIVERY_GET_OL_NUMBER = "DELIVERY_GET_OL_NUMBER";
+    public static final String DELIVERY_UPDATE_CUST_BAL_DELIVERY_COUNT = "DELIVERY_UPDATE_CUST_BAL_DELIVERY_COUNT";
+    public static final String DELIVERY_SUM_ORDER_AMOUNT = "DELIVERY_SUM_ORDER_AMOUNT";
+    public static final String DELIVERY_UPDATE_DELIVERY_DATE = "DELIVERY_UPDATE_DELIVERY_DATE";
+    public static final String DELIVERY_UPDATE_CARRIER_ID = "DELIVERY_UPDATE_CARRIER_ID";
+    public static final String DELIVERY_GET_CUST_ID = "DELIVERY_GET_CUST_ID";
+    public static final String DELIVERY_DELETE_NEW_ORDER = "DELIVERY_DELETE_NEW_ORDER";
+    public static final String DELIVERY_GET_ORDER_ID = "DELIVERY_GET_ORDER_ID";
+    public static final String DELIVERY_GET_CUST_BAN = "DELIVERY_GET_CUST_BAN";
+    public static final String DELIVERY_GET_DELIVERY_COUNT = "DELIVERY_GET_DELIVERY_COUNT";
+    public static final String DELIVERY_GET_OL_NUMBER = "DELIVERY_GET_OL_NUMBER";
     
     public static final String STMT_GET_ORDER_ID = "SELECT NO_O_ID FROM " + TPCCConstants.TABLENAME_NEWORDER + " WHERE NO_W_ID = ? AND NO_D_ID = ?";
     public static final String STMT_DELETE_NEW_ORDER = "DELETE FROM " + TPCCConstants.TABLENAME_NEWORDER + " WHERE NO_W_ID = ? AND NO_D_ID = ? AND NO_O_ID = ?";
@@ -72,7 +72,7 @@ public class DeliveryExt extends MDTCProcedure {
         for (d_id = 1; d_id <= 10; d_id++) {
             // statement = new BoundStatement(delivGetOrderId).bind(1,
             // d_id).bind(2, w_id);
-            rs = txnClient.executePreparedStatement(DELIVERY_GET_ORDER_ID, w_id, d_id);
+            rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(DELIVERY_GET_ORDER_ID, String.valueOf(w_id), w_id, d_id));
             if (rs.isEmpty()) {
                 // This district has no new orders; this can happen but should
                 // be rare
@@ -104,7 +104,7 @@ public class DeliveryExt extends MDTCProcedure {
 
             // statement = new BoundStatement(delivDeleteNewOrder).bind(1,
             // no_o_id).bind(2, d_id).bind(3, w_id);
-            rs = txnClient.executePreparedStatement(DELIVERY_DELETE_NEW_ORDER, w_id, d_id, no_o_id);
+            rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(DELIVERY_DELETE_NEW_ORDER, String.valueOf(w_id), w_id, d_id, no_o_id));
             if (!rs.isEmpty()) {
                 // This code used to run in a loop in an attempt to make this
                 // work
@@ -120,7 +120,7 @@ public class DeliveryExt extends MDTCProcedure {
 
             // statement = new BoundStatement(delivGetCustId).bind(1,
             // no_o_id).bind(2, d_id).bind(3, w_id);
-            rs = txnClient.executePreparedStatement(DELIVERY_GET_CUST_ID, w_id, d_id, no_o_id);
+            rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(DELIVERY_GET_CUST_ID, String.valueOf(w_id), w_id, d_id, no_o_id));
             if (rs.isEmpty())
                 throw new RuntimeException("O_ID=" + no_o_id + " O_D_ID=" + d_id + " O_W_ID=" + w_id + " not found!");
             resultRow = rs.iterator().next();
@@ -129,19 +129,19 @@ public class DeliveryExt extends MDTCProcedure {
 
             // statement = new BoundStatement(delivUpdateCarrierId).bind(1,
             // o_carrier_id).bind(2, no_o_id).bind(3, d_id).bind(4, w_id);
-            rs = txnClient.executePreparedStatement(DELIVERY_UPDATE_CARRIER_ID, o_carrier_id, w_id, d_id, no_o_id);
+            rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(DELIVERY_UPDATE_CARRIER_ID, String.valueOf(w_id), o_carrier_id, w_id, d_id, no_o_id));
 
-            rs = txnClient.executePreparedStatement(DELIVERY_GET_OL_NUMBER, w_id, d_id, no_o_id);
+            rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(DELIVERY_GET_OL_NUMBER, String.valueOf(w_id), w_id, d_id, no_o_id));
             for(Row row : rs.allRows()){
                 // statement = new BoundStatement(delivUpdateDeliveryDate).bind(1,
                 // System.currentTimeMillis()).bind(2, no_o_id).bind(3,
                 // d_id).bind(4, w_id);
-                rs = txnClient.executePreparedStatement(DELIVERY_UPDATE_DELIVERY_DATE, System.currentTimeMillis(), w_id, d_id, no_o_id, row.getInt("OL_NUMBER"));
+                rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(DELIVERY_UPDATE_DELIVERY_DATE, String.valueOf(w_id), System.currentTimeMillis(), w_id, d_id, no_o_id, row.getInt("OL_NUMBER")));
             }
 
             // statement = new BoundStatement(delivSumOrderAmount).bind(1,
             // no_o_id).bind(2, d_id).bind(3, w_id);
-            rs = txnClient.executePreparedStatement(DELIVERY_SUM_ORDER_AMOUNT, w_id, d_id, no_o_id);
+            rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(DELIVERY_SUM_ORDER_AMOUNT, String.valueOf(w_id), w_id, d_id, no_o_id));
             if (rs.isEmpty())
                 throw new RuntimeException("OL_O_ID=" + no_o_id + " OL_D_ID=" + d_id + " OL_W_ID=" + w_id + " not found!");
             resultRow = rs.iterator().next();
@@ -151,13 +151,13 @@ public class DeliveryExt extends MDTCProcedure {
             float cust_ban;
             int delivery_count;
             //Read before write!
-            rs = txnClient.executePreparedStatement(DELIVERY_GET_CUST_BAN, w_id, d_id, c_id);
+            rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(DELIVERY_GET_CUST_BAN, String.valueOf(w_id), w_id, d_id, c_id));
             if (rs.isEmpty())
                 throw new RuntimeException("C_ID=" + c_id + " C_W_ID=" + w_id + " C_D_ID=" + d_id + " not found!");
             resultRow = rs.iterator().next();
             cust_ban = resultRow.getFloat("C_BALANCE");
             
-            rs = txnClient.executePreparedStatement(DELIVERY_GET_DELIVERY_COUNT, w_id, d_id, c_id);
+            rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(DELIVERY_GET_DELIVERY_COUNT, String.valueOf(w_id), w_id, d_id, c_id));
             if (rs.isEmpty())
                 throw new RuntimeException("C_ID=" + c_id + " C_W_ID=" + w_id + " C_D_ID=" + d_id + " not found!");
             resultRow = rs.iterator().next();
@@ -166,7 +166,7 @@ public class DeliveryExt extends MDTCProcedure {
             // statement = new
             // BoundStatement(delivUpdateCustBalDelivCnt).bind(1,
             // ol_total).bind(2, w_id).bind(3, d_id).bind(4, c_id);
-            rs = txnClient.executePreparedStatement(DELIVERY_UPDATE_CUST_BAL_DELIVERY_COUNT, ol_total+cust_ban, delivery_count+1, w_id, d_id, c_id);
+            rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(DELIVERY_UPDATE_CUST_BAL_DELIVERY_COUNT, String.valueOf(w_id), ol_total+cust_ban, delivery_count+1, w_id, d_id, c_id));
         }
 
         // TODO: This part is not used

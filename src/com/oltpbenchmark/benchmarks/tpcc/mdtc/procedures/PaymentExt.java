@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 import mdtc.api.transaction.client.ResultSet;
@@ -13,6 +14,7 @@ import mdtc.api.transaction.client.TransactionClient;
 import org.apache.log4j.Logger;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.oltpbenchmark.benchmarks.tpcc.TPCCConstants;
 import com.oltpbenchmark.benchmarks.tpcc.TPCCUtil;
 import com.oltpbenchmark.benchmarks.tpcc.TPCCWorker;
@@ -23,18 +25,18 @@ public class PaymentExt extends MDTCProcedure {
 
     private static final Logger LOG = Logger.getLogger(PaymentExt.class);
 
-    private static final String PAY_CUSTOMER_BY_NAME = "PAY_CUSTOMER_BY_NAME";
-    private static final String PAY_INSERT_HIST = "PAY_INSERT_HIST";
-    private static final String PAY_UPDATE_BAL = "PAY_UPDATE_BAL";
-    private static final String PAY_UPDATE_CUST_BALC = "PAY_UPDATE_CUST_BALC";
-    private static final String PAY_GET_CUST_C_DATA = "PAY_GET_CUST_C_DATA";
-    private static final String PAY_GET_CUST = "PAY_GET_CUST";
-    private static final String PAY_GET_DIST = "PAY_GET_DIST";
-    private static final String PAY_UPDATE_DIST = "PAY_UPDATE_DIST";
-    private static final String PAY_GET_WHSE = "PAY_GET_WHSE";
-    private static final String PAY_UPDATE_WHSE = "PAY_UPDATE_WHSE";
-    private static final String PAY_GET_YTD = "PAY_GET_YTD";
-    private static final String PAY_GET_WYTD = "PAY_GET_WYTD";
+    public static final String PAY_CUSTOMER_BY_NAME = "PAY_CUSTOMER_BY_NAME";
+    public static final String PAY_INSERT_HIST = "PAY_INSERT_HIST";
+    public static final String PAY_UPDATE_BAL = "PAY_UPDATE_BAL";
+    public static final String PAY_UPDATE_CUST_BALC = "PAY_UPDATE_CUST_BALC";
+    public static final String PAY_GET_CUST_C_DATA = "PAY_GET_CUST_C_DATA";
+    public static final String PAY_GET_CUST = "PAY_GET_CUST";
+    public static final String PAY_GET_DIST = "PAY_GET_DIST";
+    public static final String PAY_UPDATE_DIST = "PAY_UPDATE_DIST";
+    public static final String PAY_GET_WHSE = "PAY_GET_WHSE";
+    public static final String PAY_UPDATE_WHSE = "PAY_UPDATE_WHSE";
+    public static final String PAY_GET_YTD = "PAY_GET_YTD";
+    public static final String PAY_GET_WYTD = "PAY_GET_WYTD";
 
     private final String STMT_UPDATE_WHSE = "UPDATE " + TPCCConstants.TABLENAME_WAREHOUSE + " SET W_YTD = ?  WHERE W_ID = ?";
     private final String STMT_GET_WHSE = "SELECT W_STREET_1, W_STREET_2, W_CITY, W_STATE, W_ZIP, W_NAME" + " FROM " + TPCCConstants.TABLENAME_WAREHOUSE + " WHERE W_ID = ?";
@@ -116,7 +118,7 @@ public class PaymentExt extends MDTCProcedure {
 
         // Read before write.
          float w_ytd;
-         rs = txnClient.executePreparedStatement(PAY_GET_WYTD, w_id);
+         rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(PAY_GET_WYTD,String.valueOf(w_id), w_id));
          if (!rs.iterator().hasNext())
          throw new RuntimeException("W_ID=" + w_id + " not found!");
          resultRow = rs.iterator().next();
@@ -124,10 +126,10 @@ public class PaymentExt extends MDTCProcedure {
 
         // statement = new BoundStatement(payUpdateWhse).bind(1,
         // h_amount).bind(2, w_id);
-        rs = txnClient.executePreparedStatement(PAY_UPDATE_WHSE, w_ytd+h_amount, w_id);
+        rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(PAY_UPDATE_WHSE, String.valueOf(w_id), w_ytd+h_amount, w_id));
 
         // statement = new BoundStatement(payGetWhse).bind(1, w_id);
-        rs = txnClient.executePreparedStatement(PAY_GET_WHSE, w_id);
+        rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(PAY_GET_WHSE, String.valueOf(w_id), w_id));
         if (!rs.iterator().hasNext())
             throw new RuntimeException("W_ID=" + w_id + " not found!");
         resultRow = rs.iterator().next();
@@ -141,7 +143,7 @@ public class PaymentExt extends MDTCProcedure {
 
         float d_ytd;
         // Read before write
-        rs = txnClient.executePreparedStatement(PAY_GET_YTD, w_id, d_id);
+        rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(PAY_GET_YTD, String.valueOf(w_id), w_id, d_id));
         if (!rs.iterator().hasNext())
             throw new RuntimeException("D_ID=" + d_id + " D_W_ID=" + w_id + " not found!");
         resultRow = rs.iterator().next();
@@ -149,11 +151,11 @@ public class PaymentExt extends MDTCProcedure {
 
         // statement = new BoundStatement(payUpdateDist).bind(1,
         // h_amount).bind(2, w_id).bind(3, d_id);
-        rs = txnClient.executePreparedStatement(PAY_UPDATE_DIST, h_amount + d_ytd, w_id, d_id);
+        rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(PAY_UPDATE_DIST, String.valueOf(w_id), h_amount + d_ytd, w_id, d_id));
 
         // statement = new BoundStatement(payGetDist).bind(1, w_id).bind(2,
         // d_id);
-        rs = txnClient.executePreparedStatement(PAY_GET_DIST, w_id, d_id);
+        rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(PAY_GET_DIST, String.valueOf(w_id), w_id, d_id));
         if (!rs.iterator().hasNext())
             throw new RuntimeException("D_ID=" + d_id + " D_W_ID=" + w_id + " not found!");
         resultRow = rs.iterator().next();
@@ -181,7 +183,7 @@ public class PaymentExt extends MDTCProcedure {
         if (c.c_credit.equals("BC")) { // bad credit
             // statement = new BoundStatement(payGetCustCdata).bind(1,
             // c_w_id).bind(2, c_d_id).bind(3, c.c_id);
-            rs = txnClient.executePreparedStatement(PAY_GET_CUST_C_DATA, c_w_id, c_d_id, c.c_id);
+            rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(PAY_GET_CUST_C_DATA, String.valueOf(c_w_id), c_w_id, c_d_id, c.c_id));
             if (!rs.iterator().hasNext())
                 throw new RuntimeException("C_ID=" + c.c_id + " C_W_ID=" + c_w_id + " C_D_ID=" + c_d_id + " not found!");
             resultRow = rs.iterator().next();
@@ -196,12 +198,12 @@ public class PaymentExt extends MDTCProcedure {
             // c.c_balance).bind(2, c.c_ytd_payment).bind(3,
             // c.c_payment_cnt).bind(4, c_data).bind(5, c_w_id).bind(6, c_d_id)
             // .bind(7, c.c_id);
-            rs = txnClient.executePreparedStatement(PAY_UPDATE_CUST_BALC, c.c_balance, c.c_ytd_payment, c.c_payment_cnt, c_data, c_w_id, c_d_id, c.c_id);
+            rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(PAY_UPDATE_CUST_BALC, String.valueOf(c_w_id), c.c_balance, c.c_ytd_payment, c.c_payment_cnt, c_data, c_w_id, c_d_id, c.c_id));
         } else { // GoodCredit
             // statement = new BoundStatement(payUpdateCustBal).bind(1,
             // c.c_balance).bind(2, c.c_ytd_payment).bind(3,
             // c.c_payment_cnt).bind(4, c_w_id).bind(5, c_d_id).bind(6, c.c_id);
-            rs = txnClient.executePreparedStatement(PAY_UPDATE_BAL, c.c_balance, c.c_ytd_payment, c.c_payment_cnt, c_w_id, c_d_id, c.c_id);
+            rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(PAY_UPDATE_BAL, String.valueOf(c_w_id), c.c_balance, c.c_ytd_payment, c.c_payment_cnt, c_w_id, c_d_id, c.c_id));
         }
 
         if (w_name.length() > 10)
@@ -213,7 +215,7 @@ public class PaymentExt extends MDTCProcedure {
         // statement = new BoundStatement(payInsertHist).bind(1, c_d_id).bind(2,
         // c_w_id).bind(3, c.c_id).bind(4, d_id).bind(5, w_id).bind(6,
         // System.currentTimeMillis()).bind(7, h_amount).bind(8, h_data);
-        rs = txnClient.executePreparedStatement(PAY_INSERT_HIST, c_d_id, c_w_id, c.c_id, d_id, w_id, System.currentTimeMillis(), h_amount, h_data);
+        rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(PAY_INSERT_HIST, String.valueOf(c_d_id), c_d_id, c_w_id, c.c_id, d_id, w_id, System.currentTimeMillis(), h_amount, h_data));
 
         StringBuilder terminalMessage = new StringBuilder();
         terminalMessage.append("\n+---------------------------- PAYMENT ----------------------------+");
@@ -304,7 +306,7 @@ public class PaymentExt extends MDTCProcedure {
 
         // statement = new BoundStatement(payGetCust).bind(1, c_w_id).bind(2,
         // c_d_id).bind(3, c_id);
-        rs = txnClient.executePreparedStatement(PAY_GET_CUST, c_w_id, c_d_id, c_id);
+        rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(PAY_GET_CUST, String.valueOf(c_w_id), c_w_id, c_d_id, c_id));
         if (!rs.iterator().hasNext()) {
             throw new RuntimeException("C_ID=" + c_id + " C_D_ID=" + c_d_id + " C_W_ID=" + c_w_id + " not found!");
         }
@@ -326,7 +328,7 @@ public class PaymentExt extends MDTCProcedure {
 
         // statement = new BoundStatement(customerByName).bind(1,
         // c_w_id).bind(2, c_d_id).bind(3, c_last);
-        rs = txnClient.executePreparedStatement(PAY_CUSTOMER_BY_NAME, c_w_id, c_d_id, c_last);
+        rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(PAY_CUSTOMER_BY_NAME, String.valueOf(c_w_id), c_w_id, c_d_id, c_last));
         List<Row> allRows = Lists.newArrayList(rs.allRows());
         Collections.sort(allRows, new Comparator<Row>() {
 

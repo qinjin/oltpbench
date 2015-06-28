@@ -23,10 +23,10 @@ import com.oltpbenchmark.benchmarks.tpcc.pojo.Customer;
 public class OrderStatusExt extends MDTCProcedure {
     private static final Logger LOG = Logger.getLogger(OrderStatusExt.class);
 
-    private static final String OS_CUSTOMER_BY_NAME = "OS_CUSTOMER_BY_NAME";
-    private static final String OS_GET_CUST = "OS_GET_CUST";
-    private static final String OS_GET_ORDER_LINES = "OS_GET_ORDER_LINES";
-    private static final String OS_GET_NEW_EST_ORDER = "OS_GET_NEW_EST_ORDER";
+    public static final String OS_CUSTOMER_BY_NAME = "OS_CUSTOMER_BY_NAME";
+    public static final String OS_GET_CUST = "OS_GET_CUST";
+    public static final String OS_GET_ORDER_LINES = "OS_GET_ORDER_LINES";
+    public static final String OS_GET_NEW_EST_ORDER = "OS_GET_NEW_EST_ORDER";
 
     private final String STMT_GET_NEW_EST_ORDER = "SELECT O_ID, O_CARRIER_ID, O_ENTRY_D FROM " + TPCCConstants.TABLENAME_OPENORDER + " WHERE O_W_ID = ? AND O_D_ID = ? AND O_C_ID = ?";
     private final String STMT_GET_ORDER_LINES = "SELECT OL_I_ID, OL_SUPPLY_W_ID, OL_QUANTITY," + " OL_AMOUNT, OL_DELIVERY_D" + " FROM " + TPCCConstants.TABLENAME_ORDERLINE + " WHERE OL_O_ID = ?"
@@ -71,7 +71,7 @@ public class OrderStatusExt extends MDTCProcedure {
 
         // statement = new BoundStatement(payGetCust).bind(1, c_w_id).bind(2,
         // c_d_id).bind(3, c_id);
-        rs = txnClient.executePreparedStatement(OS_GET_CUST, c_w_id, c_d_id, c_id);
+        rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(OS_GET_CUST, String.valueOf(c_w_id), c_w_id, c_d_id, c_id));
         if (!rs.iterator().hasNext()) {
             throw new RuntimeException("C_ID=" + c_id + " C_D_ID=" + c_d_id + " C_W_ID=" + c_w_id + " not found!");
         }
@@ -106,7 +106,7 @@ public class OrderStatusExt extends MDTCProcedure {
         // retrieve the carrier & order date for the most recent order.
         // statement = new BoundStatement(ordStatGetNewestOrd).bind(1,
         // w_id).bind(2, d_id).bind(3, c.c_id);
-        rs = txnClient.executePreparedStatement(OS_GET_NEW_EST_ORDER, w_id, d_id, c.c_id);
+        rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(OS_GET_NEW_EST_ORDER, String.valueOf(w_id), w_id, d_id, c.c_id));
         if (!rs.iterator().hasNext()) {
             throw new RuntimeException("No orders for O_W_ID=" + w_id + " O_D_ID=" + d_id + " O_C_ID=" + c.c_id);
         }
@@ -138,7 +138,7 @@ public class OrderStatusExt extends MDTCProcedure {
         // retrieve the order lines for the most recent order
         // statement = new BoundStatement(ordStatGetOrderLines).bind(1,
         // o_id).bind(2, d_id).bind(3, w_id);
-        rs = txnClient.executePreparedStatement(OS_GET_ORDER_LINES, o_id, d_id, w_id);
+        rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(OS_GET_ORDER_LINES, String.valueOf(w_id), o_id, d_id, w_id));
 
         Iterator<Row> iter = rs.iterator();
         while (iter.hasNext()) {
@@ -220,7 +220,7 @@ public class OrderStatusExt extends MDTCProcedure {
 
         // statement = new BoundStatement(customerByName).bind(1,
         // c_w_id).bind(2, c_d_id).bind(3, c_last);
-        rs = txnClient.executePreparedStatement(OS_CUSTOMER_BY_NAME, c_w_id, c_d_id, c_last);
+        rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(OS_CUSTOMER_BY_NAME, String.valueOf(c_w_id), c_w_id, c_d_id, c_last));
         List<Row> allRows = Lists.newArrayList(rs.allRows());
         Collections.sort(allRows, new Comparator<Row>() {
 
