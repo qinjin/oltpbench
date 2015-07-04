@@ -36,12 +36,12 @@ public final class jTPCCConfig {
 
 	public static enum TransactionType {
 		INVALID, // Exists so the order is the same as the constants below
-		NEW_ORDER, PAYMENT, ORDER_STATUS, DELIVERY, STOCK_LEVEL
+		NEW_ORDER, PAYMENT, ORDER_STATUS, DELIVERY, STOCK_LEVEL, BATCHED_NEW_ORDER
 	}
 
 	// TODO: Remove these constants
 	public final static int NEW_ORDER = 1, PAYMENT = 2, ORDER_STATUS = 3,
-			DELIVERY = 4, STOCK_LEVEL = 5;
+			DELIVERY = 4, STOCK_LEVEL = 5, BATCHED_NEW_ORDER = 6;
 
 	public final static String[] nameTokens = { "BAR", "OUGHT", "ABLE", "PRI",
 			"PRES", "ESE", "ANTI", "CALLY", "ATION", "EING" };
