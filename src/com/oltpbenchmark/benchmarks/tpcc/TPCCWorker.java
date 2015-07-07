@@ -124,7 +124,7 @@ public class TPCCWorker extends Worker {
             proc.run(TXN_CLIENT, gen, terminalWarehouseID, numWarehouses, terminalDistrictLowerID, terminalDistrictUpperID, this);
             transactionCount++;
         } catch (Throwable ex) {
-//            ex.printStackTrace();
+            ex.printStackTrace();
             LOG.warn("Warning: Rollback transaction: "+ex.getMessage());
             return (TransactionStatus.RETRY_DIFFERENT);
 //            System.exit(1);
