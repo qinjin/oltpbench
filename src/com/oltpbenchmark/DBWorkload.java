@@ -40,11 +40,13 @@ import org.apache.commons.configuration.SubnodeConfiguration;
 import org.apache.commons.configuration.XMLConfiguration;
 import org.apache.commons.configuration.tree.xpath.XPathExpressionEngine;
 import org.apache.log4j.Logger;
+import org.hibernate.jdbc.Work;
 
 import com.oltpbenchmark.api.BenchmarkModule;
 import com.oltpbenchmark.api.TransactionType;
 import com.oltpbenchmark.api.TransactionTypes;
 import com.oltpbenchmark.api.Worker;
+import com.oltpbenchmark.benchmarks.tpcc.TPCCWorker;
 import com.oltpbenchmark.types.DatabaseType;
 import com.oltpbenchmark.util.ClassUtil;
 import com.oltpbenchmark.util.FileUtil;
@@ -707,7 +709,33 @@ public class DBWorkload {
         Results r = ThreadBench.runRateLimitedBenchmark(workers, workConfs, intervalMonitor);
         LOG.info(SINGLE_LINE);
         LOG.info("Rate limited reqs/s: " + r);
+        
+        if(!workers.isEmpty() && workers.get(0) instanceof TPCCWorker){
+            printTPCCLog();
+        }
+        
         return r;
+    }
+
+    private static void printTPCCLog() {
+        int succeedTxns = Worker.numSucceedTxns.intValue();
+        int abortedTxns = Worker.numAbortedTxns.intValue();
+        int numCQLRead = Worker.numCQLRead.intValue();;
+        int numCQLWrite = Worker.numCQLWrite.intValue();
+        long benchmarkTime = Worker.benchmarkTime.longValue();
+        
+        double txnThroughput = (succeedTxns + abortedTxns) * 1000000 * 1000 / benchmarkTime;
+        double cqlTHroughput = (numCQLRead + numCQLWrite) * 1000000 * 1000 / benchmarkTime;
+        
+        LOG.info("**********************************************************************************");
+        LOG.info("TPC-C benchmark statistics:");
+        LOG.info("Succeed transactions count:" + succeedTxns);
+        LOG.info("Aborted transactions count:" + succeedTxns);
+        LOG.info("Num CQL read requests:" + numCQLRead);
+        LOG.info("Num CQL write requests:" + numCQLWrite);
+        LOG.info("The time on measurement: " + benchmarkTime / 1000000 + " ms.");
+        LOG.info("Transaction throughput: " + txnThroughput + " transaction/second.");
+        LOG.info("CQL throughput: " + cqlTHroughput + " cql/second.");
     }
 
     private static void printUsage(Options options) {

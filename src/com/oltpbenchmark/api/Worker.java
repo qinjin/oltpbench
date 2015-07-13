@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.log4j.Logger;
 
@@ -18,6 +19,7 @@ import com.oltpbenchmark.SubmittedProcedure;
 import com.oltpbenchmark.WorkloadConfiguration;
 import com.oltpbenchmark.WorkloadState;
 import com.oltpbenchmark.api.Procedure.UserAbortException;
+import com.oltpbenchmark.benchmarks.tpcc.TPCCWorker;
 import com.oltpbenchmark.catalog.Catalog;
 import com.oltpbenchmark.types.DatabaseType;
 import com.oltpbenchmark.types.State;
@@ -51,6 +53,9 @@ public abstract class Worker implements Runnable {
 	private final Map<TransactionType, Histogram<String>> txnAbortMessages = new HashMap<TransactionType, Histogram<String>>();
 	
 	private boolean seenDone = false;
+	
+	public static AtomicInteger numSucceedTxns = new AtomicInteger(), numAbortedTxns = new AtomicInteger(), numCQLRead = new AtomicInteger(), numCQLWrite = new AtomicInteger();
+	public static AtomicLong benchmarkTime = new AtomicLong();
 	
 	public Worker(BenchmarkModule benchmarkModule, int id) {
 		this.id = id;
@@ -205,6 +210,8 @@ public abstract class Worker implements Runnable {
 		TransactionType invalidTT = TransactionType.INVALID;
 		assert(invalidTT != null);
 		
+		long startTime = System.nanoTime();
+		
 work:
 		while (true) {
 
@@ -290,7 +297,7 @@ work:
 
             // PART 4: Record results
 			
-				long end = System.nanoTime();
+			long end = System.nanoTime();
             postState = wrkldState.getGlobalState();
 
             switch(postState) {
@@ -319,6 +326,20 @@ work:
 
             wrkldState.finishedWork();
 		}
+		
+        if (this instanceof TPCCWorker) {
+            TPCCWorker tpccWorker = (TPCCWorker) this;
+            numSucceedTxns.addAndGet(tpccWorker.getSucceedTransactionCount());
+            numAbortedTxns.addAndGet(tpccWorker.getAbortedTransactionCount());
+            numCQLRead.addAndGet(tpccWorker.getNumReadRequest());
+            numCQLWrite.addAndGet(tpccWorker.getNumWriteRequest());
+            long time = System.nanoTime() - startTime;
+            benchmarkTime.addAndGet(time);
+            
+            LOG.info("**********************************************************************************");
+            LOG.info("Worker " + getId() + " result: numSucceedTxns = " + tpccWorker.getSucceedTransactionCount() + " numAbortedTxns = " + tpccWorker.getAbortedTransactionCount() + " numCQLRead = "
+                    + tpccWorker.getNumReadRequest() + " numCQLWrite = " + tpccWorker.getNumWriteRequest() + " benchmarkNanoTime = " + time);
+        }
 
 		tearDown(false);
 	}

@@ -57,7 +57,7 @@ public class TPCCWorker extends Worker {
     // private boolean debugMessages;
     private final Random gen = new Random();
 
-    private int transactionCount = 1, numWarehouses;
+    private int succeedTransactionCount, abortedTransactionCount, numWarehouses, numReadRequest, numWriteRequest;
 
     private static final AtomicInteger terminalId = new AtomicInteger(0);
 
@@ -87,6 +87,22 @@ public class TPCCWorker extends Worker {
         }
     }
 
+    public int getSucceedTransactionCount() {
+        return succeedTransactionCount;
+    }
+
+    public int getAbortedTransactionCount() {
+        return abortedTransactionCount;
+    }
+
+    public int getNumReadRequest() {
+        return numReadRequest;
+    }
+
+    public int getNumWriteRequest() {
+        return numWriteRequest;
+    }
+    
     /**
      * Executes a single TPCC transaction of type transactionType.
      */
@@ -107,13 +123,15 @@ public class TPCCWorker extends Worker {
             ex.printStackTrace();
             // fail gracefully
             System.err.println("We have been invoked with an INVALID transactionType?!");
+            abortedTransactionCount++;
             throw new RuntimeException("Bad transaction type = " + nextTransaction);
         } catch (RuntimeException ex) {
             LOG.warn("Warning: Rollback transaction: "+ex.getMessage());
             conn.rollback();
+            abortedTransactionCount++;
             return (TransactionStatus.RETRY_DIFFERENT);
         }
-        transactionCount++;
+        succeedTransactionCount++;
         conn.commit();
         return (TransactionStatus.SUCCESS);
     }
@@ -122,8 +140,11 @@ public class TPCCWorker extends Worker {
         try {
             MDTCProcedure proc = (MDTCProcedure) this.getProcedure(nextTransaction.getProcedureClass());
             proc.run(TXN_CLIENT, gen, terminalWarehouseID, numWarehouses, terminalDistrictLowerID, terminalDistrictUpperID, this);
-            transactionCount++;
+            succeedTransactionCount++;
+            numReadRequest += proc.numCQLReadRequests();
+            numWriteRequest += proc.numCQLWriteRequests();
         } catch (Throwable ex) {
+            abortedTransactionCount++;
             ex.printStackTrace();
             LOG.warn("Warning: Rollback transaction: "+ex.getMessage());
             return (TransactionStatus.RETRY_DIFFERENT);

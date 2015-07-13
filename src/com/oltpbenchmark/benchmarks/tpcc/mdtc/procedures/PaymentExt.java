@@ -43,7 +43,8 @@ public class PaymentExt extends MDTCProcedure {
     private final String STMT_GET_CUST = "SELECT C_FIRST, C_MIDDLE, C_LAST, C_STREET_1, C_STREET_2, C_CITY, C_STATE, C_ZIP, C_PHONE, C_CREDIT, C_CREDIT_LIM, "
             + "C_DISCOUNT, C_BALANCE, C_YTD_PAYMENT, C_PAYMENT_CNT, C_SINCE FROM " + TPCCConstants.TABLENAME_CUSTOMER + " WHERE " + "C_W_ID = ? AND C_D_ID = ? AND C_ID = ?";
     private final String STMT_GET_CUST_C_DATA = "SELECT C_DATA FROM " + TPCCConstants.TABLENAME_CUSTOMER + " WHERE C_W_ID = ? AND C_D_ID = ? AND C_ID = ?";
-    private final String STMT_UPDATE_CUST_BALC = "UPDATE " + TPCCConstants.TABLENAME_CUSTOMER + " SET C_BALANCE = ?, C_YTD_PAYMENT = ?, " + "C_PAYMENT_CNT = ?, C_DATA = ? " + "WHERE C_W_ID = ? AND C_D_ID = ? AND C_ID = ?";
+    private final String STMT_UPDATE_CUST_BALC = "UPDATE " + TPCCConstants.TABLENAME_CUSTOMER + " SET C_BALANCE = ?, C_YTD_PAYMENT = ?, " + "C_PAYMENT_CNT = ?, C_DATA = ? "
+            + "WHERE C_W_ID = ? AND C_D_ID = ? AND C_ID = ?";
     private final String STMT_UPDATE_BAL = "UPDATE " + TPCCConstants.TABLENAME_CUSTOMER + " SET C_BALANCE = ?, C_YTD_PAYMENT = ?, " + "C_PAYMENT_CNT = ? WHERE C_W_ID = ? AND C_D_ID = ? AND C_ID = ?";
     private final String STMT_INSERT_HIST = "INSERT INTO " + TPCCConstants.TABLENAME_HISTORY + " (H_C_D_ID, H_C_W_ID, H_C_ID, H_D_ID, H_W_ID, H_DATE, H_AMOUNT, H_DATA) " + " VALUES (?,?,?,?,?,?,?,?)";
     private final String STMT_CUSTOMER_BY_NAME = "SELECT C_FIRST, C_MIDDLE, C_ID, C_STREET_1, C_STREET_2, C_CITY, C_STATE, C_ZIP, C_PHONE, C_CREDIT, C_CREDIT_LIM, C_DISCOUNT, "
@@ -52,6 +53,9 @@ public class PaymentExt extends MDTCProcedure {
     private final String STMT_GET_WYTD = "SELECT W_YTD FROM " + TPCCConstants.TABLENAME_WAREHOUSE + " WHERE W_ID = ?";
 
     public void run(TransactionClient txnClient, Random gen, int terminalWarehouseID, int numWarehouses, int terminalDistrictLowerID, int terminalDistrictUpperID, TPCCWorker w) {
+        numCQLRead = 0;
+        numCQLWrite = 0;
+        
         // initializing all prepared statements
         initStatements(txnClient);
 
@@ -115,19 +119,19 @@ public class PaymentExt extends MDTCProcedure {
         Row resultRow;
 
         // Read before write.
-         float w_ytd;
-         rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(PAY_GET_WYTD,String.valueOf(w_id), w_id));
-         if (!rs.iterator().hasNext())
-         throw new RuntimeException("W_ID=" + w_id + " not found!");
-         resultRow = rs.iterator().next();
-         w_ytd = resultRow.getFloat("W_YTD");
+        float w_ytd;
+        rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(PAY_GET_WYTD, String.valueOf(w_id), w_id));
+        numCQLRead++;
+        if (!rs.iterator().hasNext())
+            throw new RuntimeException("W_ID=" + w_id + " not found!");
+        resultRow = rs.iterator().next();
+        w_ytd = resultRow.getFloat("W_YTD");
 
-        // statement = new BoundStatement(payUpdateWhse).bind(1,
-        // h_amount).bind(2, w_id);
-        rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(PAY_UPDATE_WHSE, String.valueOf(w_id), w_ytd+h_amount, w_id));
+        rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(PAY_UPDATE_WHSE, String.valueOf(w_id), w_ytd + h_amount, w_id));
+        numCQLWrite++;
 
-        // statement = new BoundStatement(payGetWhse).bind(1, w_id);
         rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(PAY_GET_WHSE, String.valueOf(w_id), w_id));
+        numCQLRead++;
         if (!rs.iterator().hasNext())
             throw new RuntimeException("W_ID=" + w_id + " not found!");
         resultRow = rs.iterator().next();
@@ -142,18 +146,17 @@ public class PaymentExt extends MDTCProcedure {
         float d_ytd;
         // Read before write
         rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(PAY_GET_YTD, String.valueOf(w_id), w_id, d_id));
+        numCQLRead++;
         if (!rs.iterator().hasNext())
             throw new RuntimeException("D_ID=" + d_id + " D_W_ID=" + w_id + " not found!");
         resultRow = rs.iterator().next();
         d_ytd = resultRow.getFloat("D_YTD");
 
-        // statement = new BoundStatement(payUpdateDist).bind(1,
-        // h_amount).bind(2, w_id).bind(3, d_id);
         rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(PAY_UPDATE_DIST, String.valueOf(w_id), h_amount + d_ytd, w_id, d_id));
+        numCQLWrite++;
 
-        // statement = new BoundStatement(payGetDist).bind(1, w_id).bind(2,
-        // d_id);
         rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(PAY_GET_DIST, String.valueOf(w_id), w_id, d_id));
+        numCQLRead++;
         if (!rs.iterator().hasNext())
             throw new RuntimeException("D_ID=" + d_id + " D_W_ID=" + w_id + " not found!");
         resultRow = rs.iterator().next();
@@ -179,9 +182,8 @@ public class PaymentExt extends MDTCProcedure {
         c.c_payment_cnt += 1;
         String c_data = null;
         if (c.c_credit.equals("BC")) { // bad credit
-            // statement = new BoundStatement(payGetCustCdata).bind(1,
-            // c_w_id).bind(2, c_d_id).bind(3, c.c_id);
             rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(PAY_GET_CUST_C_DATA, String.valueOf(c_w_id), c_w_id, c_d_id, c.c_id));
+            numCQLWrite++;
             if (!rs.iterator().hasNext())
                 throw new RuntimeException("C_ID=" + c.c_id + " C_W_ID=" + c_w_id + " C_D_ID=" + c_d_id + " not found!");
             resultRow = rs.iterator().next();
@@ -192,16 +194,12 @@ public class PaymentExt extends MDTCProcedure {
             if (c_data.length() > 500)
                 c_data = c_data.substring(0, 500);
 
-            // statement = new BoundStatement(payUpdateCustBalCdata).bind(1,
-            // c.c_balance).bind(2, c.c_ytd_payment).bind(3,
-            // c.c_payment_cnt).bind(4, c_data).bind(5, c_w_id).bind(6, c_d_id)
-            // .bind(7, c.c_id);
-            rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(PAY_UPDATE_CUST_BALC, String.valueOf(c_w_id), c.c_balance, c.c_ytd_payment, c.c_payment_cnt, c_data, c_w_id, c_d_id, c.c_id));
+            rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(PAY_UPDATE_CUST_BALC, String.valueOf(c_w_id), c.c_balance, c.c_ytd_payment, c.c_payment_cnt, c_data, c_w_id,
+                    c_d_id, c.c_id));
+            numCQLWrite++;
         } else { // GoodCredit
-            // statement = new BoundStatement(payUpdateCustBal).bind(1,
-            // c.c_balance).bind(2, c.c_ytd_payment).bind(3,
-            // c.c_payment_cnt).bind(4, c_w_id).bind(5, c_d_id).bind(6, c.c_id);
             rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(PAY_UPDATE_BAL, String.valueOf(c_w_id), c.c_balance, c.c_ytd_payment, c.c_payment_cnt, c_w_id, c_d_id, c.c_id));
+            numCQLWrite++;
         }
 
         if (w_name.length() > 10)
@@ -210,89 +208,9 @@ public class PaymentExt extends MDTCProcedure {
             d_name = d_name.substring(0, 10);
         String h_data = w_name + "    " + d_name;
 
-        // statement = new BoundStatement(payInsertHist).bind(1, c_d_id).bind(2,
-        // c_w_id).bind(3, c.c_id).bind(4, d_id).bind(5, w_id).bind(6,
-        // System.currentTimeMillis()).bind(7, h_amount).bind(8, h_data);
-        rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(PAY_INSERT_HIST, String.valueOf(c_d_id), c_d_id, c_w_id, c.c_id, d_id, w_id, System.currentTimeMillis(), h_amount, h_data));
-
-        StringBuilder terminalMessage = new StringBuilder();
-        terminalMessage.append("\n+---------------------------- PAYMENT ----------------------------+");
-        terminalMessage.append("\n Date: " + TPCCUtil.getCurrentTime());
-        terminalMessage.append("\n\n Warehouse: ");
-        terminalMessage.append(w_id);
-        terminalMessage.append("\n   Street:  ");
-        terminalMessage.append(w_street_1);
-        terminalMessage.append("\n   Street:  ");
-        terminalMessage.append(w_street_2);
-        terminalMessage.append("\n   City:    ");
-        terminalMessage.append(w_city);
-        terminalMessage.append("   State: ");
-        terminalMessage.append(w_state);
-        terminalMessage.append("  Zip: ");
-        terminalMessage.append(w_zip);
-        terminalMessage.append("\n\n District:  ");
-        terminalMessage.append(d_id);
-        terminalMessage.append("\n   Street:  ");
-        terminalMessage.append(d_street_1);
-        terminalMessage.append("\n   Street:  ");
-        terminalMessage.append(d_street_2);
-        terminalMessage.append("\n   City:    ");
-        terminalMessage.append(d_city);
-        terminalMessage.append("   State: ");
-        terminalMessage.append(d_state);
-        terminalMessage.append("  Zip: ");
-        terminalMessage.append(d_zip);
-        terminalMessage.append("\n\n Customer:  ");
-        terminalMessage.append(c.c_id);
-        terminalMessage.append("\n   Name:    ");
-        terminalMessage.append(c.c_first);
-        terminalMessage.append(" ");
-        terminalMessage.append(c.c_middle);
-        terminalMessage.append(" ");
-        terminalMessage.append(c.c_last);
-        terminalMessage.append("\n   Street:  ");
-        terminalMessage.append(c.c_street_1);
-        terminalMessage.append("\n   Street:  ");
-        terminalMessage.append(c.c_street_2);
-        terminalMessage.append("\n   City:    ");
-        terminalMessage.append(c.c_city);
-        terminalMessage.append("   State: ");
-        terminalMessage.append(c.c_state);
-        terminalMessage.append("  Zip: ");
-        terminalMessage.append(c.c_zip);
-        terminalMessage.append("\n   Since:   ");
-        if (c.c_since != null) {
-            terminalMessage.append(c.c_since.toString());
-        } else {
-            terminalMessage.append("");
-        }
-        terminalMessage.append("\n   Credit:  ");
-        terminalMessage.append(c.c_credit);
-        terminalMessage.append("\n   %Disc:   ");
-        terminalMessage.append(c.c_discount);
-        terminalMessage.append("\n   Phone:   ");
-        terminalMessage.append(c.c_phone);
-        terminalMessage.append("\n\n Amount Paid:      ");
-        terminalMessage.append(h_amount);
-        terminalMessage.append("\n Credit Limit:     ");
-        terminalMessage.append(c.c_credit_lim);
-        terminalMessage.append("\n New Cust-Balance: ");
-        terminalMessage.append(c.c_balance);
-        if (c.c_credit.equals("BC")) {
-            if (c_data.length() > 50) {
-                terminalMessage.append("\n\n Cust-Data: " + c_data.substring(0, 50));
-                int data_chunks = c_data.length() > 200 ? 4 : c_data.length() / 50;
-                for (int n = 1; n < data_chunks; n++)
-                    terminalMessage.append("\n            " + c_data.substring(n * 50, (n + 1) * 50));
-            } else {
-                terminalMessage.append("\n\n Cust-Data: " + c_data);
-            }
-        }
-        terminalMessage.append("\n+-----------------------------------------------------------------+\n\n");
-
-        if (LOG.isTraceEnabled())
-            LOG.trace(terminalMessage.toString());
-
+        rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(PAY_INSERT_HIST, String.valueOf(c_d_id), c_d_id, c_w_id, c.c_id, d_id, w_id, System.currentTimeMillis(), h_amount,
+                h_data));
+        numCQLWrite++;
     }
 
     // attention duplicated code across trans... ok for now to maintain separate
@@ -305,6 +223,7 @@ public class PaymentExt extends MDTCProcedure {
         // statement = new BoundStatement(payGetCust).bind(1, c_w_id).bind(2,
         // c_d_id).bind(3, c_id);
         rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(PAY_GET_CUST, String.valueOf(c_w_id), c_w_id, c_d_id, c_id));
+        numCQLRead++;
         if (!rs.iterator().hasNext()) {
             throw new RuntimeException("C_ID=" + c_id + " C_D_ID=" + c_d_id + " C_W_ID=" + c_w_id + " not found!");
         }
@@ -324,9 +243,8 @@ public class PaymentExt extends MDTCProcedure {
         ResultSet rs;
         Row resultRow;
 
-        // statement = new BoundStatement(customerByName).bind(1,
-        // c_w_id).bind(2, c_d_id).bind(3, c_last);
         rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(PAY_CUSTOMER_BY_NAME, String.valueOf(c_w_id), c_w_id, c_d_id, c_last));
+        numCQLRead++;
         List<Row> allRows = Lists.newArrayList(rs.allRows());
         Collections.sort(allRows, new Comparator<Row>() {
 
@@ -374,5 +292,4 @@ public class PaymentExt extends MDTCProcedure {
         }
         return customers.get(index);
     }
-
 }
