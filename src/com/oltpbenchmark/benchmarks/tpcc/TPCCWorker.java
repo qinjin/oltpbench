@@ -153,6 +153,18 @@ public class TPCCWorker extends Worker {
         return (TransactionStatus.SUCCESS);
     }
 
+    public void printMDTCServerStatus() {
+        if (IS_MDTC) {
+            TXN_CLIENT.printMDTCStatus();
+        }
+    }
+
+    public void closeMDTCServer() {
+        if (IS_MDTC) {
+            TXN_CLIENT.close();
+        }
+    }
+
     // /**
     // * Rolls back the current transaction, then rethrows e if it is not a
     // * serialization error. Serialization errors are exceptions caused by

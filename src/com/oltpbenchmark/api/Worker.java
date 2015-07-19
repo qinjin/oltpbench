@@ -337,6 +337,8 @@ work:
             benchmarkTime.addAndGet(time);
             
             LOG.info("**********************************************************************************");
+            tpccWorker.printMDTCServerStatus();
+            tpccWorker.closeMDTCServer();
             LOG.info("Worker " + getId() + " result: numSucceedTxns = " + tpccWorker.getSucceedTransactionCount() + " numAbortedTxns = " + tpccWorker.getAbortedTransactionCount() + " numCQLRead = "
                     + tpccWorker.getNumReadRequest() + " numCQLWrite = " + tpccWorker.getNumWriteRequest() + " benchmarkNanoTime = " + time);
         }
