@@ -73,7 +73,7 @@ public class DeliveryExt extends MDTCProcedure {
         Row resultRow;
 
         for (d_id = 1; d_id <= 10; d_id++) {
-            rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(DELIVERY_GET_ORDER_ID, String.valueOf(w_id), w_id, d_id));
+            rs = txnClient.executeSingleStatementTxn(MDTCUtil.buildPreparedStatement(DELIVERY_GET_ORDER_ID, String.valueOf(w_id), w_id, d_id));
             numCQLRead++;
             if (rs.isEmpty()) {
                 // This district has no new orders; this can happen but should
@@ -104,7 +104,7 @@ public class DeliveryExt extends MDTCProcedure {
             orderIDs[d_id - 1] = no_o_id;
             rs = null;
 
-            rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(DELIVERY_DELETE_NEW_ORDER, String.valueOf(w_id), w_id, d_id, no_o_id));
+            rs = txnClient.executeSingleStatementTxn(MDTCUtil.buildPreparedStatement(DELIVERY_DELETE_NEW_ORDER, String.valueOf(w_id), w_id, d_id, no_o_id));
             numCQLWrite++;
             if (!rs.isEmpty()) {
                 // This code used to run in a loop in an attempt to make this
@@ -119,7 +119,7 @@ public class DeliveryExt extends MDTCProcedure {
                 throw new UserAbortException("New order w_id=" + w_id + " d_id=" + d_id + " no_o_id=" + no_o_id + " delete failed (not running with SERIALIZABLE isolation?)");
             }
 
-            rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(DELIVERY_GET_CUST_ID, String.valueOf(w_id), w_id, d_id, no_o_id));
+            rs = txnClient.executeSingleStatementTxn(MDTCUtil.buildPreparedStatement(DELIVERY_GET_CUST_ID, String.valueOf(w_id), w_id, d_id, no_o_id));
             numCQLRead++;
             if (rs.isEmpty())
                 throw new RuntimeException("O_ID=" + no_o_id + " O_D_ID=" + d_id + " O_W_ID=" + w_id + " not found!");
@@ -127,17 +127,17 @@ public class DeliveryExt extends MDTCProcedure {
             c_id = resultRow.getInt("O_C_ID");
             rs = null;
 
-            rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(DELIVERY_UPDATE_CARRIER_ID, String.valueOf(w_id), o_carrier_id, w_id, d_id, no_o_id));
+            rs = txnClient.executeSingleStatementTxn(MDTCUtil.buildPreparedStatement(DELIVERY_UPDATE_CARRIER_ID, String.valueOf(w_id), o_carrier_id, w_id, d_id, no_o_id));
             numCQLWrite++;
-            rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(DELIVERY_GET_OL_NUMBER, String.valueOf(w_id), w_id, d_id, no_o_id));
+            rs = txnClient.executeSingleStatementTxn(MDTCUtil.buildPreparedStatement(DELIVERY_GET_OL_NUMBER, String.valueOf(w_id), w_id, d_id, no_o_id));
             numCQLRead++;
             for (Row row : rs.allRows()) {
-                rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(DELIVERY_UPDATE_DELIVERY_DATE, String.valueOf(w_id), System.currentTimeMillis(), w_id, d_id, no_o_id,
+                rs = txnClient.executeSingleStatementTxn(MDTCUtil.buildPreparedStatement(DELIVERY_UPDATE_DELIVERY_DATE, String.valueOf(w_id), System.currentTimeMillis(), w_id, d_id, no_o_id,
                         row.getInt("OL_NUMBER")));
                 numCQLWrite++;
             }
 
-            rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(DELIVERY_SUM_ORDER_AMOUNT, String.valueOf(w_id), w_id, d_id, no_o_id));
+            rs = txnClient.executeSingleStatementTxn(MDTCUtil.buildPreparedStatement(DELIVERY_SUM_ORDER_AMOUNT, String.valueOf(w_id), w_id, d_id, no_o_id));
             numCQLRead++;
             if (rs.isEmpty())
                 throw new RuntimeException("OL_O_ID=" + no_o_id + " OL_D_ID=" + d_id + " OL_W_ID=" + w_id + " not found!");
@@ -148,21 +148,21 @@ public class DeliveryExt extends MDTCProcedure {
             float cust_ban;
             int delivery_count;
             // Read before write!
-            rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(DELIVERY_GET_CUST_BAN, String.valueOf(w_id), w_id, d_id, c_id));
+            rs = txnClient.executeSingleStatementTxn(MDTCUtil.buildPreparedStatement(DELIVERY_GET_CUST_BAN, String.valueOf(w_id), w_id, d_id, c_id));
             numCQLRead++;
             if (rs.isEmpty())
                 throw new RuntimeException("C_ID=" + c_id + " C_W_ID=" + w_id + " C_D_ID=" + d_id + " not found!");
             resultRow = rs.iterator().next();
             cust_ban = resultRow.getFloat("C_BALANCE");
 
-            rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(DELIVERY_GET_DELIVERY_COUNT, String.valueOf(w_id), w_id, d_id, c_id));
+            rs = txnClient.executeSingleStatementTxn(MDTCUtil.buildPreparedStatement(DELIVERY_GET_DELIVERY_COUNT, String.valueOf(w_id), w_id, d_id, c_id));
             numCQLRead++;
             if (rs.isEmpty())
                 throw new RuntimeException("C_ID=" + c_id + " C_W_ID=" + w_id + " C_D_ID=" + d_id + " not found!");
             resultRow = rs.iterator().next();
             delivery_count = resultRow.getInt("C_DELIVERY_CNT");
 
-            rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(DELIVERY_UPDATE_CUST_BAL_DELIVERY_COUNT, String.valueOf(w_id), ol_total + cust_ban, delivery_count + 1, w_id, d_id,
+            rs = txnClient.executeSingleStatementTxn(MDTCUtil.buildPreparedStatement(DELIVERY_UPDATE_CUST_BAL_DELIVERY_COUNT, String.valueOf(w_id), ol_total + cust_ban, delivery_count + 1, w_id, d_id,
                     c_id));
             numCQLWrite++;
         }

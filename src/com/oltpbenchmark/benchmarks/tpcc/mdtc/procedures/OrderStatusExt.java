@@ -68,7 +68,7 @@ public class OrderStatusExt extends MDTCProcedure {
         ResultSet rs;
         Row resultRow;
 
-        rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(OS_GET_CUST, String.valueOf(c_w_id), c_w_id, c_d_id, c_id));
+        rs = txnClient.executeSingleStatementTxn(MDTCUtil.buildPreparedStatement(OS_GET_CUST, String.valueOf(c_w_id), c_w_id, c_d_id, c_id));
         numCQLRead++;
         if (!rs.iterator().hasNext()) {
             throw new RuntimeException("C_ID=" + c_id + " C_D_ID=" + c_d_id + " C_W_ID=" + c_w_id + " not found!");
@@ -102,7 +102,7 @@ public class OrderStatusExt extends MDTCProcedure {
 
         // find the newest order for the customer
         // retrieve the carrier & order date for the most recent order.
-        rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(OS_GET_NEW_EST_ORDER, String.valueOf(w_id), w_id, d_id, c.c_id));
+        rs = txnClient.executeSingleStatementTxn(MDTCUtil.buildPreparedStatement(OS_GET_NEW_EST_ORDER, String.valueOf(w_id), w_id, d_id, c.c_id));
         numCQLRead++;
         if (!rs.iterator().hasNext()) {
             throw new RuntimeException("No orders for O_W_ID=" + w_id + " O_D_ID=" + d_id + " O_C_ID=" + c.c_id);
@@ -133,7 +133,7 @@ public class OrderStatusExt extends MDTCProcedure {
         rs = null;
 
         // retrieve the order lines for the most recent order
-        rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(OS_GET_ORDER_LINES, String.valueOf(w_id), o_id, d_id, w_id));
+        rs = txnClient.executeSingleStatementTxn(MDTCUtil.buildPreparedStatement(OS_GET_ORDER_LINES, String.valueOf(w_id), o_id, d_id, w_id));
         numCQLRead++;
         
         Iterator<Row> iter = rs.iterator();
@@ -169,7 +169,7 @@ public class OrderStatusExt extends MDTCProcedure {
         ArrayList<Customer> customers = new ArrayList<Customer>();
         ResultSet rs;
 
-        rs = txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(OS_CUSTOMER_BY_NAME, String.valueOf(c_w_id), c_w_id, c_d_id, c_last));
+        rs = txnClient.executeSingleStatementTxn(MDTCUtil.buildPreparedStatement(OS_CUSTOMER_BY_NAME, String.valueOf(c_w_id), c_w_id, c_d_id, c_last));
         numCQLRead++;
         List<Row> allRows = Lists.newArrayList(rs.allRows());
         Collections.sort(allRows, new Comparator<Row>() {
