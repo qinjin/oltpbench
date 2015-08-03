@@ -72,11 +72,17 @@ public class BatchedNewOrderExt extends NewOrderExt {
             TxnStatement statement1 = MDTCUtil.buildPreparedStatement(NEWORDER_GET_WH_CQL, String.valueOf(w_id), w_id);
             TxnStatement statement2 = MDTCUtil.buildPreparedStatement(NEWORDER_GET_CUST_CQL, String.valueOf(w_id), w_id, d_id, c_id);
             TxnStatement statement3 = MDTCUtil.buildPreparedStatement(NEWORDER_GET_DIST_CQL, String.valueOf(w_id), w_id, d_id);
+            TxnStatement statement4 = MDTCUtil.buildPreparedStatement(NEWORDER_UPDATE_DIST_CQL, String.valueOf(w_id), 0, w_id, d_id);
+            TxnStatement statement5 = MDTCUtil.buildPreparedStatement(NEWORDER_INSERT_ORDER_CQL, String.valueOf(w_id), 0, d_id, w_id, c_id, System.currentTimeMillis(), o_ol_cnt,
+                    o_all_local);
             allStatements.add(statement1);
             allStatements.add(statement2);
             allStatements.add(statement3);
+            allStatements.add(statement4);
+            allStatements.add(statement5);
             rs = txnClient.executeMultiStatementsTxn(IsolationLevel.OneCopySerilizible, allStatements);
-            numCQLRead++;
+            numCQLWrite+=2;
+            numCQLRead+=1;
 
             // int next_oder_id;
             // // Read before write
