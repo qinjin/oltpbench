@@ -5,8 +5,6 @@ import java.util.Random;
 
 import org.apache.log4j.Logger;
 
-import mdtc.api.transaction.client.ResultSet;
-import mdtc.api.transaction.client.Row;
 import mdtc.api.transaction.client.TransactionClient;
 import mdtc.api.transaction.client.TxnStatement;
 import mdtc.api.transaction.data.IsolationLevel;
@@ -51,22 +49,6 @@ public class BatchedNewOrderExt extends NewOrderExt {
 
     private void batchecNewOrderTransaction(int w_id, int d_id, int c_id, int o_ol_cnt, int o_all_local, int[] itemIDs, int[] supplierWarehouseIDs, int[] orderQuantities, TransactionClient txnClient,
             TPCCWorker w) {
-        float c_discount, w_tax, d_tax = 0, i_price;
-        int d_next_o_id, o_id = -1, s_quantity;
-        String c_last = null, c_credit = null, i_name, i_data, s_data;
-        String s_dist_01, s_dist_02, s_dist_03, s_dist_04, s_dist_05;
-        String s_dist_06, s_dist_07, s_dist_08, s_dist_09, s_dist_10, ol_dist_info = null;
-        float[] itemPrices = new float[o_ol_cnt];
-        float[] orderLineAmounts = new float[o_ol_cnt];
-        String[] itemNames = new String[o_ol_cnt];
-        int[] stockQuantities = new int[o_ol_cnt];
-        char[] brandGeneric = new char[o_ol_cnt];
-        int ol_supply_w_id, ol_i_id, ol_quantity;
-        int s_remote_cnt_increment;
-        float ol_amount, total_amount = 0;
-
-        ResultSet rs;
-        Row resultRow;
         try {
             List<TxnStatement> allStatements = Lists.newArrayList();
             TxnStatement statement1 = MDTCUtil.buildPreparedStatement(NEWORDER_GET_WH_CQL, String.valueOf(w_id), w_id);
@@ -80,36 +62,9 @@ public class BatchedNewOrderExt extends NewOrderExt {
             allStatements.add(statement3);
             allStatements.add(statement4);
             allStatements.add(statement5);
-            rs = txnClient.executeMultiStatementsTxn(IsolationLevel.OneCopySerilizible, allStatements);
+            txnClient.executeMultiStatementsTxn(IsolationLevel.OneCopySerilizible, allStatements);
             numCQLWrite+=2;
-            numCQLRead+=1;
-
-            // int next_oder_id;
-            // // Read before write
-            // rs =
-            // txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(NEWORDER_GET_NEXT_ORDER_ID,
-            // String.valueOf(w_id), w_id, d_id));
-            // if (rs.isEmpty())
-            // throw new
-            // RuntimeException("Error!! Cannot get next_order_id on district for D_ID="
-            // + d_id + " D_W_ID=" + w_id);
-            // resultRow = rs.iterator().next();
-            // next_oder_id = resultRow.getInt("D_NEXT_O_ID") + 1;
-            //
-            // rs =
-            // txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(NEWORDER_UPDATE_DIST_CQL,
-            // String.valueOf(w_id), next_oder_id, w_id, d_id));
-            //
-            // o_id = d_next_o_id;
-            // rs =
-            // txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(NEWORDER_INSERT_ORDER_CQL,
-            // String.valueOf(w_id), o_id, d_id, w_id, c_id,
-            // System.currentTimeMillis(), o_ol_cnt, o_all_local));
-            //
-            // rs =
-            // txnClient.executePreparedStatement(MDTCUtil.buildPreparedStatement(NEWORDER_INSERT_NEW_ORDER_CQL,
-            // String.valueOf(w_id), o_id, d_id, w_id));
-
+            numCQLRead+=3;
         } catch (UserAbortException userEx) {
             LOG.debug("Caught an expected error in New Order");
             throw userEx;
