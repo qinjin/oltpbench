@@ -16,6 +16,8 @@ import com.oltpbenchmark.benchmarks.tpcc.TPCCWorker;
 public class BatchedNewOrderExt extends NewOrderExt {
     private static final Logger LOG = Logger.getLogger(NewOrderExt.class);
 
+    private final Random r = new Random();
+
     @Override
     public void run(TransactionClient txnClient, Random gen, int terminalWarehouseID, int numWarehouses, int terminalDistrictLowerID, int terminalDistrictUpperID, TPCCWorker w) {
         numCQLRead = 0;
@@ -50,21 +52,40 @@ public class BatchedNewOrderExt extends NewOrderExt {
     private void batchecNewOrderTransaction(int w_id, int d_id, int c_id, int o_ol_cnt, int o_all_local, int[] itemIDs, int[] supplierWarehouseIDs, int[] orderQuantities, TransactionClient txnClient,
             TPCCWorker w) {
         try {
-            List<TxnStatement> allStatements = Lists.newArrayList();
+
             TxnStatement statement1 = MDTCUtil.buildPreparedStatement(NEWORDER_GET_WH_CQL, String.valueOf(w_id), w_id);
             TxnStatement statement2 = MDTCUtil.buildPreparedStatement(NEWORDER_GET_CUST_CQL, String.valueOf(w_id), w_id, d_id, c_id);
             TxnStatement statement3 = MDTCUtil.buildPreparedStatement(NEWORDER_GET_DIST_CQL, String.valueOf(w_id), w_id, d_id);
             TxnStatement statement4 = MDTCUtil.buildPreparedStatement(NEWORDER_UPDATE_DIST_CQL, String.valueOf(w_id), 0, w_id, d_id);
-            TxnStatement statement5 = MDTCUtil.buildPreparedStatement(NEWORDER_INSERT_ORDER_CQL, String.valueOf(w_id), 0, d_id, w_id, c_id, System.currentTimeMillis(), o_ol_cnt,
-                    o_all_local);
-            allStatements.add(statement1);
-            allStatements.add(statement2);
-            allStatements.add(statement3);
-            allStatements.add(statement4);
-            allStatements.add(statement5);
+            TxnStatement statement5 = MDTCUtil.buildPreparedStatement(NEWORDER_INSERT_ORDER_CQL, String.valueOf(w_id), 0, d_id, w_id, c_id, System.currentTimeMillis(), o_ol_cnt, o_all_local);
+
+            List<TxnStatement> allStatements = Lists.newArrayList();
+
+            int num = r.nextInt(3);
+            switch (num) {
+                case 0:
+                    allStatements.add(statement1);
+                    allStatements.add(statement2);
+                    allStatements.add(statement3);
+                    numCQLRead += 3;
+                    break;
+                case 1:
+                    allStatements.add(statement4);
+                    allStatements.add(statement5);
+                    numCQLWrite += 2;
+                    break;
+                default:
+                    allStatements.add(statement1);
+                    allStatements.add(statement2);
+                    allStatements.add(statement3);
+                    allStatements.add(statement4);
+                    allStatements.add(statement5);
+                    numCQLRead += 3;
+                    numCQLWrite += 2;
+                    break;
+            }
+
             txnClient.executeMultiStatementsTxn(IsolationLevel.OneCopySerilizible, allStatements);
-            numCQLWrite+=2;
-            numCQLRead+=3;
         } catch (UserAbortException userEx) {
             LOG.debug("Caught an expected error in New Order");
             throw userEx;
