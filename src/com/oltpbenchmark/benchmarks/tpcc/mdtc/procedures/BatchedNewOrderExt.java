@@ -8,6 +8,7 @@ import org.apache.log4j.Logger;
 import mdtc.api.transaction.client.TransactionClient;
 import mdtc.api.transaction.client.TxnStatement;
 import mdtc.api.transaction.data.IsolationLevel;
+import mdtc.impl.APIFactory;
 
 import com.google.common.collect.Lists;
 import com.oltpbenchmark.benchmarks.tpcc.TPCCUtil;
@@ -17,6 +18,12 @@ public class BatchedNewOrderExt extends NewOrderExt {
     private static final Logger LOG = Logger.getLogger(NewOrderExt.class);
 
     private final Random r = new Random();
+    
+    int txnType = 0;
+    
+    public BatchedNewOrderExt() {
+        txnType = APIFactory.getTxnType();
+    }
 
     @Override
     public void run(TransactionClient txnClient, Random gen, int terminalWarehouseID, int numWarehouses, int terminalDistrictLowerID, int terminalDistrictUpperID, TPCCWorker w) {
@@ -61,8 +68,7 @@ public class BatchedNewOrderExt extends NewOrderExt {
 
             List<TxnStatement> allStatements = Lists.newArrayList();
 
-            int num = r.nextInt(3);
-            switch (num) {
+            switch (txnType) {
                 case 0:
                     allStatements.add(statement1);
                     allStatements.add(statement2);
