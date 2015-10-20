@@ -2,6 +2,7 @@ package com.oltpbenchmark.benchmarks.tpcc.mdtc.procedures;
 
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.log4j.Logger;
 
@@ -17,7 +18,7 @@ import com.oltpbenchmark.benchmarks.tpcc.TPCCWorker;
 public class BatchedNewOrderExt extends NewOrderExt {
     private static final Logger LOG = Logger.getLogger(NewOrderExt.class);
 
-    private final Random r = new Random();
+    private static final AtomicInteger ORDER_ID = new AtomicInteger();
     
     int txnType = 0;
     
@@ -59,13 +60,14 @@ public class BatchedNewOrderExt extends NewOrderExt {
     private void batchecNewOrderTransaction(int w_id, int d_id, int c_id, int o_ol_cnt, int o_all_local, int[] itemIDs, int[] supplierWarehouseIDs, int[] orderQuantities, TransactionClient txnClient,
             TPCCWorker w) {
         try {
-
+            int o_id  = ORDER_ID.getAndIncrement();
             TxnStatement statement1 = MDTCUtil.buildPreparedStatement(NEWORDER_GET_WH_CQL, String.valueOf(w_id), w_id);
             TxnStatement statement2 = MDTCUtil.buildPreparedStatement(NEWORDER_GET_CUST_CQL, String.valueOf(w_id), w_id, d_id, c_id);
             TxnStatement statement3 = MDTCUtil.buildPreparedStatement(NEWORDER_GET_DIST_CQL, String.valueOf(w_id), w_id, d_id);
-            TxnStatement statement4 = MDTCUtil.buildPreparedStatement(NEWORDER_UPDATE_DIST_CQL, String.valueOf(d_id), 0, w_id, d_id);
-            TxnStatement statement5 = MDTCUtil.buildPreparedStatement(NEWORDER_INSERT_ORDER_CQL, String.valueOf(c_id), 0, d_id, w_id, c_id, System.currentTimeMillis(), o_ol_cnt, o_all_local);
-
+            TxnStatement statement4 = MDTCUtil.buildPreparedStatement(NEWORDER_UPDATE_DIST_CQL, String.valueOf(o_id), o_id, w_id, d_id);
+            TxnStatement statement5 = MDTCUtil.buildPreparedStatement(NEWORDER_INSERT_ORDER_CQL, String.valueOf(o_id), o_id, d_id, w_id, c_id, System.currentTimeMillis(), o_ol_cnt, o_all_local);
+            TxnStatement statement6 = MDTCUtil.buildPreparedStatement(NEWORDER_INSERT_NEW_ORDER_CQL, String.valueOf(o_id), o_id, d_id, w_id);
+            
             List<TxnStatement> allStatements = Lists.newArrayList();
 
             switch (txnType) {
@@ -78,15 +80,28 @@ public class BatchedNewOrderExt extends NewOrderExt {
                 case 1:
                     allStatements.add(statement4);
                     allStatements.add(statement5);
+                    allStatements.add(statement6);
+                    numCQLWrite += 3;
+                    break;
+                case 2:
+                    allStatements.add(statement1);
+                    allStatements.add(statement5);
+                    allStatements.add(statement6);
+                    numCQLRead += 1;
                     numCQLWrite += 2;
+                    break;
+                case 3:
+                    allStatements.add(statement1);
+                    allStatements.add(statement2);
+                    allStatements.add(statement5);
+                    numCQLRead += 2;
+                    numCQLWrite += 1;
                     break;
                 default:
                     allStatements.add(statement1);
-                    allStatements.add(statement2);
-                    allStatements.add(statement3);
-                    allStatements.add(statement4);
                     allStatements.add(statement5);
-                    numCQLRead += 3;
+                    allStatements.add(statement6);
+                    numCQLRead += 1;
                     numCQLWrite += 2;
                     break;
             }
