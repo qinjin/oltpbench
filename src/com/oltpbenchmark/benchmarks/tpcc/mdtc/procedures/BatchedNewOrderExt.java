@@ -6,6 +6,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.log4j.Logger;
 
+import mdtc.api.transaction.client.ResultSet;
 import mdtc.api.transaction.client.TransactionClient;
 import mdtc.api.transaction.client.TxnStatement;
 import mdtc.api.transaction.data.IsolationLevel;
@@ -30,6 +31,8 @@ public class BatchedNewOrderExt extends NewOrderExt {
     public void run(TransactionClient txnClient, Random gen, int terminalWarehouseID, int numWarehouses, int terminalDistrictLowerID, int terminalDistrictUpperID, TPCCWorker w) {
         numCQLRead = 0;
         numCQLWrite = 0;
+        numSucceed = 0;
+        numAborted = 0;
         initStatements(txnClient);
 
         int districtID = TPCCUtil.randomNumber(terminalDistrictLowerID, terminalDistrictUpperID, gen);
@@ -106,7 +109,12 @@ public class BatchedNewOrderExt extends NewOrderExt {
                     break;
             }
 
-            txnClient.executeMultiStatementsTxn(IsolationLevel.OneCopySerilizible, allStatements);
+            ResultSet result = txnClient.executeMultiStatementsTxn(IsolationLevel.OneCopySerilizible, allStatements);
+            if(result.isSucceed()){
+                numSucceed++;
+            }else {
+                numAborted++;
+            }
         } catch (UserAbortException userEx) {
             LOG.debug("Caught an expected error in New Order");
             throw userEx;

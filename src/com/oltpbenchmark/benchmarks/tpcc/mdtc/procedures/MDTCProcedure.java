@@ -11,8 +11,8 @@ import com.oltpbenchmark.benchmarks.tpcc.TPCCWorker;
 import com.oltpbenchmark.benchmarks.tpcc.procedures.TPCCProcedure;
 
 public abstract class MDTCProcedure extends TPCCProcedure{
-    protected int numCQLRead, numCQLWrite;
-    
+    protected int numCQLRead, numCQLWrite, numSucceed, numAborted;
+
     public ResultSet run(Connection conn, Random gen,
             int terminalWarehouseID, int numWarehouses,
             int terminalDistrictLowerID, int terminalDistrictUpperID,
@@ -34,5 +34,13 @@ public abstract class MDTCProcedure extends TPCCProcedure{
 
     public int numCQLWriteRequests() {
         return numCQLWrite;
+    }
+    
+    public int numAborted() {
+        return numAborted;
+    }
+
+    public int numSucceed() {
+        return numSucceed;
     }
 }
