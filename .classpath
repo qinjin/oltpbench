@@ -44,11 +44,11 @@
 	<classpathentry combineaccessrules="false" kind="src" path="/MDTC"/>
 	<classpathentry kind="lib" path="lib/okhttp-2.2.0.jar"/>
 	<classpathentry kind="lib" path="lib/okio-1.2.0.jar"/>
-	<classpathentry kind="lib" path="lib/mdtc.tansaction-0.0.4.jar"/>
 	<classpathentry kind="lib" path="lib/httpasyncclient-4.1.jar"/>
 	<classpathentry kind="lib" path="lib/httpclient-4.5.1.jar"/>
 	<classpathentry kind="lib" path="lib/httpcore-4.4.3.jar"/>
 	<classpathentry kind="lib" path="lib/httpcore-nio-4.4.1.jar"/>
 	<classpathentry kind="lib" path="lib/httpmime-4.4-alpha1.jar"/>
+	<classpathentry kind="lib" path="lib/mdtc.tansaction-0.0.5.jar"/>
 	<classpathentry kind="output" path="build"/>
 </classpath>
