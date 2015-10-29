@@ -711,26 +711,26 @@ public class DBWorkload {
         LOG.info("Rate limited reqs/s: " + r);
         
         if(!workers.isEmpty() && workers.get(0) instanceof TPCCWorker){
-            printTPCCLog();
+            printTPCCLog(r);
         }
         
         return r;
     }
 
-    private static void printTPCCLog() {
+    private static void printTPCCLog(Results r) {
         int succeedTxns = Worker.numSucceedTxns.intValue();
         int abortedTxns = Worker.numAbortedTxns.intValue();
         int numCQLRead = Worker.numCQLRead.intValue();;
         int numCQLWrite = Worker.numCQLWrite.intValue();
-        long benchmarkTime = Worker.benchmarkTime.longValue();
+        long benchmarkTime = r.nanoSeconds;
         
-        double txnThroughput = (succeedTxns + abortedTxns) * 1000000 * 1000 / benchmarkTime;
-        double cqlTHroughput = (numCQLRead + numCQLWrite) * 1000000 * 1000 / benchmarkTime;
+        double txnThroughput = (double)(succeedTxns + abortedTxns) * 1000000000d / benchmarkTime;
+        double cqlTHroughput = (double)(numCQLRead + numCQLWrite) * 1000000000d / benchmarkTime;
         
         LOG.info("**********************************************************************************");
         LOG.info("TPC-C benchmark statistics:");
         LOG.info("Succeed transactions count:" + succeedTxns);
-        LOG.info("Aborted transactions count:" + succeedTxns);
+        LOG.info("Aborted transactions count:" + abortedTxns);
         LOG.info("Num CQL read requests:" + numCQLRead);
         LOG.info("Num CQL write requests:" + numCQLWrite);
         LOG.info("The time on measurement: " + benchmarkTime / 1000000 + " ms.");
