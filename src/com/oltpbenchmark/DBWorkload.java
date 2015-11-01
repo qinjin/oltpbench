@@ -727,7 +727,7 @@ public class DBWorkload {
         int abortedTxns = Worker.numAbortedTxns.intValue();
         int numCQLRead = Worker.numCQLRead.intValue();;
         int numCQLWrite = Worker.numCQLWrite.intValue();
-        long benchmarkTime = r.nanoSeconds / 1000000;
+        long benchmarkTime = r.nanoSeconds;
         
         double txnThroughput = (double)(succeedTxns + abortedTxns) * 1000000000d / benchmarkTime;
         double cqlThroughput = (double)(numCQLRead + numCQLWrite) * 1000000000d / benchmarkTime;
@@ -744,7 +744,7 @@ public class DBWorkload {
         LOG.info("Aborted transactions count:" + abortedTxns);
         LOG.info("Num CQL read requests:" + numCQLRead);
         LOG.info("Num CQL write requests:" + numCQLWrite);
-        LOG.info("The time on measurement: " + benchmarkTime  + " ms.");
+        LOG.info("The time on measurement: " + benchmarkTime / 1000000  + " ms.");
         LOG.info("Transaction throughput: " + txnThroughput + " transaction/second.");
         LOG.info("CQL throughput: " + cqlThroughput + " cql/second.");
         
@@ -760,7 +760,7 @@ public class DBWorkload {
         result.abortedTxns = abortedTxns;
         result.numCQLRead = numCQLRead;
         result.numCQLWrite = numCQLWrite;
-        result.benchmarkTime = benchmarkTime;
+        result.benchmarkTime = benchmarkTime / 1000000;
         result.txnThroughput = txnThroughput;
         result.cqlThroughput = cqlThroughput;
         
