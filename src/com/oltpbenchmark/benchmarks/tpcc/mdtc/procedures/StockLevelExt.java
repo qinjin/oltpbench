@@ -49,7 +49,7 @@ public class StockLevelExt extends MDTCProcedure {
 
         // statement = new BoundStatement(stockGetDistOrderId).bind(1,
         // w_id).bind(2, d_id);
-        rs = txnClient.executeSingleStatementTxn(MDTCUtil.buildPreparedStatement(SL_GET_DIST_ORDER, String.valueOf(w_id), w_id, d_id));
+        rs = txnClient.executeSingleStatementTxn(MDTCUtil.buildPreparedStatement(false, SL_GET_DIST_ORDER, String.valueOf(w_id), w_id, d_id));
         numCQLRead++;
 
         if (!rs.iterator().hasNext())
@@ -61,7 +61,7 @@ public class StockLevelExt extends MDTCProcedure {
         // statement = new BoundStatement(stockGetCountStock).bind(1,
         // w_id).bind(2, d_id).bind(3, o_id).bind(4, o_id).bind(5, w_id).bind(6,
         // threshold);
-        rs = txnClient.executeSingleStatementTxn(MDTCUtil.buildPreparedStatement(SL_GET_COUNT_STOCK, String.valueOf(w_id), w_id, threshold));
+        rs = txnClient.executeSingleStatementTxn(MDTCUtil.buildPreparedStatement(false, SL_GET_COUNT_STOCK, String.valueOf(w_id), w_id, threshold));
         numCQLRead++;
         stock_count = rs.allRows().size();
 

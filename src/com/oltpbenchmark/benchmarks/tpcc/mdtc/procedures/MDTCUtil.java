@@ -84,8 +84,8 @@ public class MDTCUtil {
         return c;
     }
 
-    public static TxnStatement buildPreparedStatement(String name, String key, Object... parameters) {
-        TxnStatement statement = new TxnStatement(name.toLowerCase(), key.toLowerCase(), STATEMENT_TABLE.get(name).toLowerCase(), parameters);
+    public static TxnStatement buildPreparedStatement(boolean isRead, String name, String key, Object... parameters) {
+        TxnStatement statement = new TxnStatement(name.toLowerCase(), key.toLowerCase(), STATEMENT_TABLE.get(name).toLowerCase(), parameters, isRead);
         return statement;
     }
 }

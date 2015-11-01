@@ -20,9 +20,9 @@ public class BatchedNewOrderExt extends NewOrderExt {
     private static final Logger LOG = Logger.getLogger(NewOrderExt.class);
 
     private static final AtomicInteger ORDER_ID = new AtomicInteger();
-    
+
     int txnType = 0;
-    
+
     public BatchedNewOrderExt() {
         txnType = APIFactory.getTxnType();
     }
@@ -57,62 +57,107 @@ public class BatchedNewOrderExt extends NewOrderExt {
             orderQuantities[i] = TPCCUtil.randomNumber(1, 10, gen);
         }
 
-        batchecNewOrderTransaction(terminalWarehouseID, districtID, customerID, numItems, allLocal, itemIDs, supplierWarehouseIDs, orderQuantities, txnClient, w);
+        batchecNewOrderTransaction(gen, terminalWarehouseID, districtID, customerID, numItems, allLocal, itemIDs, supplierWarehouseIDs, orderQuantities, txnClient, w);
     }
 
-    private void batchecNewOrderTransaction(int w_id, int d_id, int c_id, int o_ol_cnt, int o_all_local, int[] itemIDs, int[] supplierWarehouseIDs, int[] orderQuantities, TransactionClient txnClient,
-            TPCCWorker w) {
+    private void batchecNewOrderTransaction(Random gen, int w_id, int d_id, int c_id, int o_ol_cnt, int o_all_local, int[] itemIDs, int[] supplierWarehouseIDs, int[] orderQuantities,
+            TransactionClient txnClient, TPCCWorker w) {
         try {
-            int o_id  = ORDER_ID.getAndIncrement();
-            TxnStatement statement1 = MDTCUtil.buildPreparedStatement(NEWORDER_GET_WH_CQL, String.valueOf(w_id), w_id);
-            TxnStatement statement2 = MDTCUtil.buildPreparedStatement(NEWORDER_GET_CUST_CQL, String.valueOf(w_id), w_id, d_id, c_id);
-            TxnStatement statement3 = MDTCUtil.buildPreparedStatement(NEWORDER_GET_DIST_CQL, String.valueOf(w_id), w_id, d_id);
-            TxnStatement statement4 = MDTCUtil.buildPreparedStatement(NEWORDER_UPDATE_DIST_CQL, String.valueOf(o_id), o_id, w_id, d_id);
-            TxnStatement statement5 = MDTCUtil.buildPreparedStatement(NEWORDER_INSERT_ORDER_CQL, String.valueOf(o_id), o_id, d_id, w_id, c_id, System.currentTimeMillis(), o_ol_cnt, o_all_local);
-            TxnStatement statement6 = MDTCUtil.buildPreparedStatement(NEWORDER_INSERT_NEW_ORDER_CQL, String.valueOf(o_id), o_id, d_id, w_id);
-            
-            List<TxnStatement> allStatements = Lists.newArrayList();
+            int o_id = ORDER_ID.getAndIncrement();
+            TxnStatement statement1 = MDTCUtil.buildPreparedStatement(true, NEWORDER_GET_WH_CQL, String.valueOf(w_id), w_id);
+            TxnStatement statement2 = MDTCUtil.buildPreparedStatement(true, NEWORDER_GET_CUST_CQL, String.valueOf(w_id), w_id, d_id, c_id);
+            TxnStatement statement3 = MDTCUtil.buildPreparedStatement(true, NEWORDER_GET_DIST_CQL, String.valueOf(w_id), w_id, d_id);
+            TxnStatement statement4 = MDTCUtil.buildPreparedStatement(false, NEWORDER_UPDATE_DIST_CQL, String.valueOf(o_id), o_id, w_id, d_id);
+            TxnStatement statement5 = MDTCUtil
+                    .buildPreparedStatement(false, NEWORDER_INSERT_ORDER_CQL, String.valueOf(o_id), o_id, d_id, w_id, c_id, System.currentTimeMillis(), o_ol_cnt, o_all_local);
+            TxnStatement statement6 = MDTCUtil.buildPreparedStatement(false, NEWORDER_INSERT_NEW_ORDER_CQL, String.valueOf(o_id), o_id, d_id, w_id);
+
+            // Read-only txns
+            List<TxnStatement> allReadStatements = Lists.newArrayList(statement1, statement2, statement3);
+            // Write-only txns
+            List<TxnStatement> allWriteStatements = Lists.newArrayList(statement4, statement5, statement6);
+            // Write-Read txns
+            List<TxnStatement> allStatements = Lists.newArrayList(statement4, statement1, statement5, statement2, statement6, statement3);
+            // Selected statements.
+            List<TxnStatement> statements = Lists.newArrayList();
+            // Randomly number of statements per transaction.
+            int numStatments = (int) TPCCUtil.randomNumber(1, 3, gen);
 
             switch (txnType) {
                 case 0:
-                    allStatements.add(statement1);
-                    allStatements.add(statement2);
-                    allStatements.add(statement3);
-                    numCQLRead += 3;
+                    for (int i = 0; i < numStatments; i++) {
+                        statements.add(allReadStatements.get(i));
+                    }
+                    numCQLRead += numStatments;
                     break;
                 case 1:
-                    allStatements.add(statement4);
-                    allStatements.add(statement5);
-                    allStatements.add(statement6);
-                    numCQLWrite += 3;
+                    for (int i = 0; i < numStatments; i++) {
+                        statements.add(allWriteStatements.get(i));
+                    }
+                    numCQLWrite += numStatments;
                     break;
                 case 2:
-                    allStatements.add(statement1);
-                    allStatements.add(statement5);
-                    allStatements.add(statement6);
-                    numCQLRead += 1;
-                    numCQLWrite += 2;
+                    // 20% read-only, 80% read-write
+                    if (gen.nextFloat() < 0.2f) {
+                        for (int i = 0; i < numStatments; i++) {
+                            statements.add(allReadStatements.get(i));
+                        }
+                        numCQLRead += numStatments;
+                    } else {
+                        for (int i = 0; i < numStatments; i++) {
+                            TxnStatement stmt = allStatements.get(i);
+                            if (stmt.isRead) {
+                                numCQLRead++;
+                            } else {
+                                numCQLWrite++;
+                            }
+                            statements.add(stmt);
+                        }
+                    }
                     break;
                 case 3:
-                    allStatements.add(statement1);
-                    allStatements.add(statement2);
-                    allStatements.add(statement5);
-                    numCQLRead += 2;
-                    numCQLWrite += 1;
+                    // 80% read-only, 20% write
+                    if (gen.nextFloat() < 0.8f) {
+                        for (int i = 0; i < numStatments; i++) {
+                            statements.add(allReadStatements.get(i));
+                        }
+                        numCQLRead += numStatments;
+                    } else {
+                        for (int i = 0; i < numStatments; i++) {
+                            TxnStatement stmt = allStatements.get(i);
+                            if (stmt.isRead) {
+                                numCQLRead++;
+                            } else {
+                                numCQLWrite++;
+                            }
+                            statements.add(stmt);
+                        }
+                    }
                     break;
                 default:
-                    allStatements.add(statement1);
-                    allStatements.add(statement5);
-                    allStatements.add(statement6);
-                    numCQLRead += 1;
-                    numCQLWrite += 2;
+                    if (gen.nextFloat() < 0.2f) {
+                        for (int i = 0; i < numStatments; i++) {
+                            statements.add(allReadStatements.get(i));
+                        }
+                        numCQLRead += numStatments;
+                    } else {
+                        for (int i = 0; i < numStatments; i++) {
+                            TxnStatement stmt = allStatements.get(i);
+                            if (stmt.isRead) {
+                                numCQLRead++;
+                            } else {
+                                numCQLWrite++;
+                            }
+                            statements.add(stmt);
+                        }
+                    }
                     break;
             }
 
-            ResultSet result = txnClient.executeMultiStatementsTxn(IsolationLevel.OneCopySerilizible, allStatements);
-            if(result.isSucceed()){
+            ResultSet result = txnClient.executeMultiStatementsTxn(IsolationLevel.OneCopySerilizible, statements);
+            if (result.isSucceed()) {
                 numSucceed++;
-            }else {
+            } else {
                 numAborted++;
             }
         } catch (UserAbortException userEx) {

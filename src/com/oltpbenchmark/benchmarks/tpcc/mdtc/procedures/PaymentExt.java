@@ -120,17 +120,17 @@ public class PaymentExt extends MDTCProcedure {
 
         // Read before write.
         float w_ytd;
-        rs = txnClient.executeSingleStatementTxn(MDTCUtil.buildPreparedStatement(PAY_GET_WYTD, String.valueOf(w_id), w_id));
+        rs = txnClient.executeSingleStatementTxn(MDTCUtil.buildPreparedStatement(false, PAY_GET_WYTD, String.valueOf(w_id), w_id));
         numCQLRead++;
         if (!rs.iterator().hasNext())
             throw new RuntimeException("W_ID=" + w_id + " not found!");
         resultRow = rs.iterator().next();
         w_ytd = resultRow.getFloat("W_YTD");
 
-        rs = txnClient.executeSingleStatementTxn(MDTCUtil.buildPreparedStatement(PAY_UPDATE_WHSE, String.valueOf(w_id), w_ytd + h_amount, w_id));
+        rs = txnClient.executeSingleStatementTxn(MDTCUtil.buildPreparedStatement(true, PAY_UPDATE_WHSE, String.valueOf(w_id), w_ytd + h_amount, w_id));
         numCQLWrite++;
 
-        rs = txnClient.executeSingleStatementTxn(MDTCUtil.buildPreparedStatement(PAY_GET_WHSE, String.valueOf(w_id), w_id));
+        rs = txnClient.executeSingleStatementTxn(MDTCUtil.buildPreparedStatement(false, PAY_GET_WHSE, String.valueOf(w_id), w_id));
         numCQLRead++;
         if (!rs.iterator().hasNext())
             throw new RuntimeException("W_ID=" + w_id + " not found!");
@@ -145,17 +145,17 @@ public class PaymentExt extends MDTCProcedure {
 
         float d_ytd;
         // Read before write
-        rs = txnClient.executeSingleStatementTxn(MDTCUtil.buildPreparedStatement(PAY_GET_YTD, String.valueOf(w_id), w_id, d_id));
+        rs = txnClient.executeSingleStatementTxn(MDTCUtil.buildPreparedStatement(false, PAY_GET_YTD, String.valueOf(w_id), w_id, d_id));
         numCQLRead++;
         if (!rs.iterator().hasNext())
             throw new RuntimeException("D_ID=" + d_id + " D_W_ID=" + w_id + " not found!");
         resultRow = rs.iterator().next();
         d_ytd = resultRow.getFloat("D_YTD");
 
-        rs = txnClient.executeSingleStatementTxn(MDTCUtil.buildPreparedStatement(PAY_UPDATE_DIST, String.valueOf(w_id), h_amount + d_ytd, w_id, d_id));
+        rs = txnClient.executeSingleStatementTxn(MDTCUtil.buildPreparedStatement(true, PAY_UPDATE_DIST, String.valueOf(w_id), h_amount + d_ytd, w_id, d_id));
         numCQLWrite++;
 
-        rs = txnClient.executeSingleStatementTxn(MDTCUtil.buildPreparedStatement(PAY_GET_DIST, String.valueOf(w_id), w_id, d_id));
+        rs = txnClient.executeSingleStatementTxn(MDTCUtil.buildPreparedStatement(false, PAY_GET_DIST, String.valueOf(w_id), w_id, d_id));
         numCQLRead++;
         if (!rs.iterator().hasNext())
             throw new RuntimeException("D_ID=" + d_id + " D_W_ID=" + w_id + " not found!");
@@ -182,7 +182,7 @@ public class PaymentExt extends MDTCProcedure {
         c.c_payment_cnt += 1;
         String c_data = null;
         if (c.c_credit.equals("BC")) { // bad credit
-            rs = txnClient.executeSingleStatementTxn(MDTCUtil.buildPreparedStatement(PAY_GET_CUST_C_DATA, String.valueOf(c_w_id), c_w_id, c_d_id, c.c_id));
+            rs = txnClient.executeSingleStatementTxn(MDTCUtil.buildPreparedStatement(false, PAY_GET_CUST_C_DATA, String.valueOf(c_w_id), c_w_id, c_d_id, c.c_id));
             numCQLWrite++;
             if (!rs.iterator().hasNext())
                 throw new RuntimeException("C_ID=" + c.c_id + " C_W_ID=" + c_w_id + " C_D_ID=" + c_d_id + " not found!");
@@ -194,11 +194,11 @@ public class PaymentExt extends MDTCProcedure {
             if (c_data.length() > 500)
                 c_data = c_data.substring(0, 500);
 
-            rs = txnClient.executeSingleStatementTxn(MDTCUtil.buildPreparedStatement(PAY_UPDATE_CUST_BALC, String.valueOf(c_w_id), c.c_balance, c.c_ytd_payment, c.c_payment_cnt, c_data, c_w_id,
+            rs = txnClient.executeSingleStatementTxn(MDTCUtil.buildPreparedStatement(true, PAY_UPDATE_CUST_BALC, String.valueOf(c_w_id), c.c_balance, c.c_ytd_payment, c.c_payment_cnt, c_data, c_w_id,
                     c_d_id, c.c_id));
             numCQLWrite++;
         } else { // GoodCredit
-            rs = txnClient.executeSingleStatementTxn(MDTCUtil.buildPreparedStatement(PAY_UPDATE_BAL, String.valueOf(c_w_id), c.c_balance, c.c_ytd_payment, c.c_payment_cnt, c_w_id, c_d_id, c.c_id));
+            rs = txnClient.executeSingleStatementTxn(MDTCUtil.buildPreparedStatement(true, PAY_UPDATE_BAL, String.valueOf(c_w_id), c.c_balance, c.c_ytd_payment, c.c_payment_cnt, c_w_id, c_d_id, c.c_id));
             numCQLWrite++;
         }
 
@@ -208,7 +208,7 @@ public class PaymentExt extends MDTCProcedure {
             d_name = d_name.substring(0, 10);
         String h_data = w_name + "    " + d_name;
 
-        rs = txnClient.executeSingleStatementTxn(MDTCUtil.buildPreparedStatement(PAY_INSERT_HIST, String.valueOf(c_d_id), c_d_id, c_w_id, c.c_id, d_id, w_id, System.currentTimeMillis(), h_amount,
+        rs = txnClient.executeSingleStatementTxn(MDTCUtil.buildPreparedStatement(true, PAY_INSERT_HIST, String.valueOf(c_d_id), c_d_id, c_w_id, c.c_id, d_id, w_id, System.currentTimeMillis(), h_amount,
                 h_data));
         numCQLWrite++;
     }
@@ -222,7 +222,7 @@ public class PaymentExt extends MDTCProcedure {
 
         // statement = new BoundStatement(payGetCust).bind(1, c_w_id).bind(2,
         // c_d_id).bind(3, c_id);
-        rs = txnClient.executeSingleStatementTxn(MDTCUtil.buildPreparedStatement(PAY_GET_CUST, String.valueOf(c_w_id), c_w_id, c_d_id, c_id));
+        rs = txnClient.executeSingleStatementTxn(MDTCUtil.buildPreparedStatement(false, PAY_GET_CUST, String.valueOf(c_w_id), c_w_id, c_d_id, c_id));
         numCQLRead++;
         if (!rs.iterator().hasNext()) {
             throw new RuntimeException("C_ID=" + c_id + " C_D_ID=" + c_d_id + " C_W_ID=" + c_w_id + " not found!");
@@ -243,7 +243,7 @@ public class PaymentExt extends MDTCProcedure {
         ResultSet rs;
         Row resultRow;
 
-        rs = txnClient.executeSingleStatementTxn(MDTCUtil.buildPreparedStatement(PAY_CUSTOMER_BY_NAME, String.valueOf(c_w_id), c_w_id, c_d_id, c_last));
+        rs = txnClient.executeSingleStatementTxn(MDTCUtil.buildPreparedStatement(false, PAY_CUSTOMER_BY_NAME, String.valueOf(c_w_id), c_w_id, c_d_id, c_last));
         numCQLRead++;
         List<Row> allRows = Lists.newArrayList(rs.allRows());
         Collections.sort(allRows, new Comparator<Row>() {

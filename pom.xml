@@ -166,7 +166,7 @@
 		<dependency>
 			<groupId>se.kth.mdtc</groupId>
 			<artifactId>mdtc.tansaction</artifactId>
-			<version>0.0.4</version>
+			<version>0.0.5</version>
 		</dependency>
 	</dependencies>
 </project>
