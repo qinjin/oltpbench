@@ -50,5 +50,6 @@
 	<classpathentry kind="lib" path="lib/httpmime-4.4-alpha1.jar"/>
 	<classpathentry kind="lib" path="lib/mdtc.tansaction-0.0.5.jar" sourcepath="/MDTC"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/MDTC"/>
+	<classpathentry kind="lib" path="lib/cassandra-driver-core-2.1.0.jar"/>
 	<classpathentry kind="output" path="build"/>
 </classpath>

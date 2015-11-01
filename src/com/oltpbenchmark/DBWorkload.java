@@ -28,6 +28,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import mdtc.impl.APIFactory;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -42,6 +44,8 @@ import org.apache.commons.configuration.tree.xpath.XPathExpressionEngine;
 import org.apache.log4j.Logger;
 import org.hibernate.jdbc.Work;
 
+import ch.ethz.ssh2.crypto.digest.MAC;
+
 import com.oltpbenchmark.api.BenchmarkModule;
 import com.oltpbenchmark.api.TransactionType;
 import com.oltpbenchmark.api.TransactionTypes;
@@ -50,6 +54,7 @@ import com.oltpbenchmark.benchmarks.tpcc.TPCCWorker;
 import com.oltpbenchmark.types.DatabaseType;
 import com.oltpbenchmark.util.ClassUtil;
 import com.oltpbenchmark.util.FileUtil;
+import com.oltpbenchmark.util.MDTCResult;
 import com.oltpbenchmark.util.QueueLimitException;
 import com.oltpbenchmark.util.ResultUploader;
 import com.oltpbenchmark.util.StringUtil;
@@ -711,31 +716,55 @@ public class DBWorkload {
         LOG.info("Rate limited reqs/s: " + r);
         
         if(!workers.isEmpty() && workers.get(0) instanceof TPCCWorker){
-            printTPCCLog(r);
+            printTPCCLog(r, workers.size());
         }
         
         return r;
     }
 
-    private static void printTPCCLog(Results r) {
+    private static void printTPCCLog(Results r, int numClients) {
         int succeedTxns = Worker.numSucceedTxns.intValue();
         int abortedTxns = Worker.numAbortedTxns.intValue();
         int numCQLRead = Worker.numCQLRead.intValue();;
         int numCQLWrite = Worker.numCQLWrite.intValue();
-        long benchmarkTime = r.nanoSeconds;
+        long benchmarkTime = r.nanoSeconds / 1000000;
         
         double txnThroughput = (double)(succeedTxns + abortedTxns) * 1000000000d / benchmarkTime;
-        double cqlTHroughput = (double)(numCQLRead + numCQLWrite) * 1000000000d / benchmarkTime;
+        double cqlThroughput = (double)(numCQLRead + numCQLWrite) * 1000000000d / benchmarkTime;
         
         LOG.info("**********************************************************************************");
         LOG.info("TPC-C benchmark statistics:");
+        LOG.info("Datacenter ID: " +  APIFactory.getDatacenterID());
+        LOG.info("View length: " + APIFactory.getViewLength());
+        LOG.info("Execution delay: " + APIFactory.getTransactionExecutionDelay());
+        LOG.info("Type: " + APIFactory.getTxnType());
+        LOG.info("Txn Clients number:" + numClients);
+        LOG.info("Is 2PL:" + APIFactory.isUse2PLTxnClientProxy());
         LOG.info("Succeed transactions count:" + succeedTxns);
         LOG.info("Aborted transactions count:" + abortedTxns);
         LOG.info("Num CQL read requests:" + numCQLRead);
         LOG.info("Num CQL write requests:" + numCQLWrite);
-        LOG.info("The time on measurement: " + benchmarkTime / 1000000 + " ms.");
+        LOG.info("The time on measurement: " + benchmarkTime  + " ms.");
         LOG.info("Transaction throughput: " + txnThroughput + " transaction/second.");
-        LOG.info("CQL throughput: " + cqlTHroughput + " cql/second.");
+        LOG.info("CQL throughput: " + cqlThroughput + " cql/second.");
+        
+        
+        MDTCResult result = new MDTCResult();
+        result.dcNo  = APIFactory.getDatacenterID();
+        result.viewLength = APIFactory.getViewLength();
+        result.executionDelay = APIFactory.getTransactionExecutionDelay();
+        result.txnType = APIFactory.getTxnType();
+        result.numClients = numClients;
+        result.isTwoPL = APIFactory.isUse2PLTxnClientProxy();
+        result.succeedTxns = succeedTxns;
+        result.abortedTxns = abortedTxns;
+        result.numCQLRead = numCQLRead;
+        result.numCQLWrite = numCQLWrite;
+        result.benchmarkTime = benchmarkTime;
+        result.txnThroughput = txnThroughput;
+        result.cqlThroughput = cqlThroughput;
+        
+        result.saveToCassandra();
     }
 
     private static void printUsage(Options options) {

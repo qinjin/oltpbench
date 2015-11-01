@@ -168,5 +168,10 @@
 			<artifactId>mdtc.tansaction</artifactId>
 			<version>0.0.5</version>
 		</dependency>
+		<dependency>
+				<groupId>com.datastax.cassandra</groupId>
+				<artifactId>cassandra-driver-core</artifactId>
+				<version>2.1.0</version>
+		</dependency>
 	</dependencies>
 </project>
