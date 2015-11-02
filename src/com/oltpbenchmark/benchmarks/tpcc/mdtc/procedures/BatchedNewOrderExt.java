@@ -80,9 +80,16 @@ public class BatchedNewOrderExt extends NewOrderExt {
             List<TxnStatement> allStatements = Lists.newArrayList(statement4, statement1, statement5, statement2, statement6, statement3);
             // Selected statements.
             List<TxnStatement> statements = Lists.newArrayList();
-            // Randomly number of statements per transaction.
-            int numStatments = (int) TPCCUtil.randomNumber(1, 3, gen);
-
+            // Number of statements per transaction: 20%:1, 20%2, 60%:3.
+            int numStatments;
+            float randomFloat = gen.nextFloat();
+            if (randomFloat < 0.2f) {
+                numStatments = 1;
+            } else if (randomFloat < 0.8f) {
+                numStatments = 3;
+            } else {
+                numStatments = 2;
+            }
             switch (txnType) {
                 case 0:
                     for (int i = 0; i < numStatments; i++) {
