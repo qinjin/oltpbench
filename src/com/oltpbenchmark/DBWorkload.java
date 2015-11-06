@@ -28,6 +28,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import mdtc.conf.ConfHandler;
+import mdtc.conf.TranConfReader;
 import mdtc.impl.APIFactory;
 
 import org.apache.commons.cli.CommandLine;
@@ -41,11 +43,14 @@ import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.SubnodeConfiguration;
 import org.apache.commons.configuration.XMLConfiguration;
 import org.apache.commons.configuration.tree.xpath.XPathExpressionEngine;
+import org.apache.http.util.Args;
 import org.apache.log4j.Logger;
+import org.hibernate.classic.Validatable;
 import org.hibernate.jdbc.Work;
 
 import ch.ethz.ssh2.crypto.digest.MAC;
 
+import com.google.common.collect.Lists;
 import com.oltpbenchmark.api.BenchmarkModule;
 import com.oltpbenchmark.api.TransactionType;
 import com.oltpbenchmark.api.TransactionTypes;
@@ -73,6 +78,8 @@ public class DBWorkload {
      * @throws Exception 
      */
     public static void main(String[] args) throws Exception {
+        System.out.println("Oltpbench args: "+ Lists.newArrayList(args));
+        handleMDTCArgs(args);
         // Initialize log4j
         String log4jPath = System.getProperty("log4j.configuration");
         if (log4jPath != null) {
@@ -222,6 +229,9 @@ public class DBWorkload {
             wrkld.setDBPassword(xmlConfig.getString("password"));
             int terminals = xmlConfig.getInt("terminals[not(@bench)]", 0);
             terminals = xmlConfig.getInt("terminals" + pluginTest, terminals);
+            //We use terminals number from Transaction config, and fallback xmlConfig if it doesn't exist in tran conf.
+            int terminalsFromTranConf = APIFactory.getNumClients();
+            terminals = terminalsFromTranConf == -1 ? terminals : terminalsFromTranConf;
             wrkld.setTerminals(terminals);
             String isolationMode = xmlConfig.getString("isolation[not(@bench)]", "TRANSACTION_SERIALIZABLE");
             wrkld.setIsolationMode(xmlConfig.getString("isolation" + pluginTest, isolationMode));
@@ -654,6 +664,42 @@ public class DBWorkload {
         } else {
             LOG.info("Skipping benchmark workload execution");
         }
+    }
+
+    private static void handleMDTCArgs(String[] args) {
+        int viewLength = -1;
+        int delay = -1;
+        int txnType = -1;
+        int numClients = -1;
+        int index = 0;
+        for(int i=args.length -1; i>args.length - 5; i--){
+            if(i>0){
+                try{
+                    int value= Integer.parseInt(args[i]); 
+                    switch(index){
+                        case 3:
+                            viewLength = value;
+                            break;
+                        case 2:
+                            delay = value;
+                            break;
+                        case 1:
+                            txnType = value;
+                            break;
+                        case 0:
+                            numClients = value;
+                            break;
+                        default:
+                            break;
+                    }
+                }catch(NumberFormatException e){
+                    break;
+                }
+            }
+            index++;
+        }
+        
+        ConfHandler.setBenchmarkParameters(viewLength, delay, txnType, numClients);
     }
 
     /* buggy piece of shit of Java XPath implementation made me do it 
