@@ -39,7 +39,7 @@ public abstract class Worker implements Runnable {
 	
 	private final int id;
 	private final BenchmarkModule benchmarkModule;
-	protected final Connection conn;
+	protected Connection conn;
 	protected final WorkloadConfiguration wrkld;
 	protected final TransactionTypes transactionTypes;
 	protected final Map<TransactionType, Procedure> procedures = new HashMap<TransactionType, Procedure>();
@@ -72,7 +72,9 @@ public abstract class Worker implements Runnable {
 		    this.conn.setAutoCommit(false);
 		    conn.setTransactionIsolation(this.wrkld.getIsolationMode());
 		} catch (SQLException ex) {
-		    throw new RuntimeException("Failed to connect to database", ex);
+//		    throw new RuntimeException("Failed to connect to database", ex);
+		    this.conn = null;
+		    LOG.warn("Not connected to database");
 		}
 		
 		// Generate all the Procedures that we're going to need
@@ -516,7 +518,9 @@ work:
 	 */
 	public void tearDown(boolean error) {
 		try {
-			conn.close();
+		    if(conn!=null){
+		        conn.close();
+		    }
 		} catch (SQLException e) {
 			LOG.warn("No connection to close");
 		}
