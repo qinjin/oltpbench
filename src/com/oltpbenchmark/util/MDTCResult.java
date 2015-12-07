@@ -15,7 +15,7 @@ public class MDTCResult {
     public int executionDelay;
     public int txnType;
     public int numClients;
-    public boolean isTwoPL;
+    public String evaType;
     public int succeedTxns;
     public int abortedTxns;
     public int numCQLRead;
@@ -24,7 +24,7 @@ public class MDTCResult {
     public double txnThroughput;
     public double cqlThroughput;
 
-    private static final String INSERT_CQL = "INSERT INTO RESULT" + " (dc_no,view_length, exe_delay, type, num_clients, two_pl, succeed_txns,"
+    private static final String INSERT_CQL = "INSERT INTO RESULT" + " (dc_no,view_length, exe_delay, type, num_clients, eva_type, succeed_txns,"
             + " aborted_txns, num_cql_read, num_cql_write, benchmark_time, throughput, cql_throughput)" + " values (";
 
     public void saveToCassandra() {
@@ -32,7 +32,7 @@ public class MDTCResult {
         Cluster cluster = Cluster.builder().addContactPoint(APIFactory.getResultServer()).build();
         Session session = cluster.connect("mdtc_tpcc");
 
-        String cql = INSERT_CQL + dcNo + "," + viewLength + "," + executionDelay + "," + txnType + "," + numClients + "," + isTwoPL + "," + succeedTxns + "," + abortedTxns + "," + numCQLRead + ","
+        String cql = INSERT_CQL + dcNo + "," + viewLength + "," + executionDelay + "," + txnType + "," + numClients + ", '" + evaType + "' ," + succeedTxns + "," + abortedTxns + "," + numCQLRead + ","
                 + numCQLWrite + "," + benchmarkTime + "," + txnThroughput + "," + cqlThroughput + ")";
         session.execute(cql);
 

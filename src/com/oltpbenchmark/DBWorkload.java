@@ -785,7 +785,7 @@ public class DBWorkload {
         LOG.info("Execution delay: " + APIFactory.getTransactionExecutionDelay());
         LOG.info("Type: " + APIFactory.getTxnType());
         LOG.info("Txn Clients number:" + numClients);
-        LOG.info("Is 2PL:" + APIFactory.isUse2PLTxnClientProxy());
+        LOG.info("Evaluation type:" + APIFactory.getEvaluationType().toString());
         LOG.info("Succeed transactions count:" + succeedTxns);
         LOG.info("Aborted transactions count:" + abortedTxns);
         LOG.info("Num CQL read requests:" + numCQLRead);
@@ -801,7 +801,7 @@ public class DBWorkload {
         result.executionDelay = APIFactory.getTransactionExecutionDelay();
         result.txnType = APIFactory.getTxnType();
         result.numClients = numClients;
-        result.isTwoPL = APIFactory.isUse2PLTxnClientProxy();
+        result.evaType = APIFactory.getEvaluationType().toString();
         result.succeedTxns = succeedTxns;
         result.abortedTxns = abortedTxns;
         result.numCQLRead = numCQLRead;
