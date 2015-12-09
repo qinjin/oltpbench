@@ -12,6 +12,7 @@ import com.oltpbenchmark.benchmarks.tpcc.procedures.TPCCProcedure;
 
 public abstract class MDTCProcedure extends TPCCProcedure{
     protected int numCQLRead, numCQLWrite, numSucceed, numAborted;
+    protected long latency;
 
     public ResultSet run(Connection conn, Random gen,
             int terminalWarehouseID, int numWarehouses,
@@ -42,5 +43,9 @@ public abstract class MDTCProcedure extends TPCCProcedure{
 
     public int numSucceed() {
         return numSucceed;
+    }
+    
+    public long latency(){
+        return latency;
     }
 }

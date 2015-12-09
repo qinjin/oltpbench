@@ -33,6 +33,7 @@ public class BatchedNewOrderExt extends NewOrderExt {
         numCQLWrite = 0;
         numSucceed = 0;
         numAborted = 0;
+        latency = 0;
         initStatements(txnClient);
 
         int districtID = TPCCUtil.randomNumber(terminalDistrictLowerID, terminalDistrictUpperID, gen);
@@ -164,6 +165,7 @@ public class BatchedNewOrderExt extends NewOrderExt {
             ResultSet result = txnClient.executeMultiStatementsTxn(IsolationLevel.OneCopySerilizible, statements);
             if (result.isSucceed()) {
                 numSucceed++;
+                latency = result.latency;
             } else {
                 numAborted++;
             }

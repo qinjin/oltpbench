@@ -58,6 +58,7 @@ public class TPCCWorker extends Worker {
     private final Random gen = new Random();
 
     private int numWarehouses, numReadRequest, numWriteRequest, numSucceed, numAborted;
+    private long latency;
 
     private static final AtomicInteger terminalId = new AtomicInteger(0);
 
@@ -103,6 +104,10 @@ public class TPCCWorker extends Worker {
         return numWriteRequest;
     }
     
+    public long getLatency(){
+        return latency;
+    }
+    
     /**
      * Executes a single TPCC transaction of type transactionType.
      */
@@ -141,6 +146,7 @@ public class TPCCWorker extends Worker {
             numWriteRequest += proc.numCQLWriteRequests();
             numSucceed += proc.numSucceed();
             numAborted += proc.numAborted();
+            latency += proc.latency();
         } catch (Throwable ex) {
             ex.printStackTrace();
             LOG.warn("Warning: Rollback transaction: "+ex.getMessage());

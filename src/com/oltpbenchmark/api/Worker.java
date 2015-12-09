@@ -56,6 +56,7 @@ public abstract class Worker implements Runnable {
 	
 	public static AtomicInteger numSucceedTxns = new AtomicInteger(), numAbortedTxns = new AtomicInteger(), numCQLRead = new AtomicInteger(), numCQLWrite = new AtomicInteger();
 	public static AtomicLong benchmarkTime = new AtomicLong();
+	public static AtomicLong latency = new AtomicLong();
 	
 	public Worker(BenchmarkModule benchmarkModule, int id) {
 		this.id = id;
@@ -335,6 +336,7 @@ work:
             numAbortedTxns.addAndGet(tpccWorker.getAbortedTransactionCount());
             numCQLRead.addAndGet(tpccWorker.getNumReadRequest());
             numCQLWrite.addAndGet(tpccWorker.getNumWriteRequest());
+            latency.addAndGet(tpccWorker.getLatency());
             long time = System.nanoTime() - startTime;
             benchmarkTime.addAndGet(time);
             

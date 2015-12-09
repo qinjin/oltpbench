@@ -10,6 +10,7 @@ CREATE TABLE RESULT (
   type INT, // (0:100%read-only, 1:100%write-only, 2:20%read+80%write, 3:80%read+20%write. Default:2)
   num_clients INT,
   eva_type TEXT, //MDTC, TwoPL, OCC
+  latency DOUBLE, //Average latency for succeed transactions
   succeed_txns INT,
   aborted_txns INT,
   num_cql_read INT,
@@ -17,5 +18,5 @@ CREATE TABLE RESULT (
   benchmark_time BIGINT,
   throughput DOUBLE,
   cql_throughput DOUBLE,
-  PRIMARY KEY(dc_no, view_length, exe_delay, type, num_clients, two_pl)
+  PRIMARY KEY(dc_no, view_length, exe_delay, type, num_clients, eva_type)
 );

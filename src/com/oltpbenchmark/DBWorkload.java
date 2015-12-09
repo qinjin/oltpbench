@@ -774,9 +774,11 @@ public class DBWorkload {
         int numCQLRead = Worker.numCQLRead.intValue();;
         int numCQLWrite = Worker.numCQLWrite.intValue();
         long benchmarkTime = r.nanoSeconds;
+        long succeedTxnLatency = Worker.latency.longValue();
         
         double txnThroughput = (double)(succeedTxns + abortedTxns) * 1000000000d / benchmarkTime;
         double cqlThroughput = (double)(numCQLRead + numCQLWrite) * 1000000000d / benchmarkTime;
+        double avgLatency = (double) succeedTxnLatency /succeedTxns;
         
         LOG.info("**********************************************************************************");
         LOG.info("TPC-C benchmark statistics:");
@@ -784,14 +786,15 @@ public class DBWorkload {
         LOG.info("View length: " + APIFactory.getViewLength());
         LOG.info("Execution delay: " + APIFactory.getTransactionExecutionDelay());
         LOG.info("Type: " + APIFactory.getTxnType());
-        LOG.info("Txn Clients number:" + numClients);
-        LOG.info("Evaluation type:" + APIFactory.getEvaluationType().toString());
-        LOG.info("Succeed transactions count:" + succeedTxns);
-        LOG.info("Aborted transactions count:" + abortedTxns);
-        LOG.info("Num CQL read requests:" + numCQLRead);
-        LOG.info("Num CQL write requests:" + numCQLWrite);
-        LOG.info("The time on measurement: " + benchmarkTime / 1000000  + " ms.");
-        LOG.info("Transaction throughput: " + txnThroughput + " transaction/second.");
+        LOG.info("Txn Clients number: " + numClients);
+        LOG.info("Evaluation type: " + APIFactory.getEvaluationType().toString());
+        LOG.info("AverageLatency: " + avgLatency+ " ms");
+        LOG.info("Succeed transactions count: " + succeedTxns);
+        LOG.info("Aborted transactions count: " + abortedTxns);
+        LOG.info("Num CQL read requests: " + numCQLRead);
+        LOG.info("Num CQL write requests: " + numCQLWrite);
+        LOG.info("The time on measurement: " + benchmarkTime / 1000000  + " ms");
+        LOG.info("Transaction throughput: " + txnThroughput + " transaction/second");
         LOG.info("CQL throughput: " + cqlThroughput + " cql/second.");
         
         
@@ -809,6 +812,7 @@ public class DBWorkload {
         result.benchmarkTime = benchmarkTime / 1000000;
         result.txnThroughput = txnThroughput;
         result.cqlThroughput = cqlThroughput;
+        result.avgLatency = avgLatency;
         
         result.saveToCassandra();
     }
