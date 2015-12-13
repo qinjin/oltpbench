@@ -667,16 +667,20 @@ public class DBWorkload {
     }
 
     private static void handleMDTCArgs(String[] args) {
+        int evaType = -1;
         int viewLength = -1;
         int delay = -1;
         int txnType = -1;
         int numClients = -1;
         int index = 0;
-        for(int i=args.length -1; i>args.length - 5; i--){
+        for(int i=args.length -1; i>args.length - 6; i--){
             if(i>0){
                 try{
                     int value= Integer.parseInt(args[i]); 
                     switch(index){
+                        case 4:
+                            evaType = value;
+                            break;
                         case 3:
                             viewLength = value;
                             break;
@@ -699,7 +703,7 @@ public class DBWorkload {
             index++;
         }
         
-        ConfHandler.setBenchmarkParameters(viewLength, delay, txnType, numClients);
+        ConfHandler.setBenchmarkParameters(evaType, viewLength, delay, txnType, numClients);
     }
 
     /* buggy piece of shit of Java XPath implementation made me do it 
