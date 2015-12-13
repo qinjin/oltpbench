@@ -36,6 +36,7 @@ import java.util.Set;
 import org.apache.log4j.Logger;
 
 import com.oltpbenchmark.WorkloadConfiguration;
+import com.oltpbenchmark.benchmarks.tpcc.TPCCWorker;
 import com.oltpbenchmark.catalog.Catalog;
 import com.oltpbenchmark.catalog.Table;
 import com.oltpbenchmark.types.DatabaseType;
@@ -224,7 +225,8 @@ public abstract class BenchmarkModule {
             this.createDatabase(this.workConf.getDBType(), conn);
             conn.close();
         } catch (SQLException ex) {
-            throw new RuntimeException(String.format("Unexpected error when trying to create the %s database", this.benchmarkName), ex);
+            LOG.info("Create DB skip MySQL connection.");
+//            throw new RuntimeException(String.format("Unexpected error when trying to create the %s database", this.benchmarkName), ex);
         }
     }
 
@@ -267,11 +269,16 @@ public abstract class BenchmarkModule {
      */
     public final void loadDatabase() {
         try {
-            Connection conn = this.makeConnection();
-            this.loadDatabase(conn);
-            conn.close();
+            if(TPCCWorker.IS_MDTC){
+                this.loadDatabase(null);
+            } else {
+                Connection conn = this.makeConnection();
+                this.loadDatabase(conn);
+                conn.close();
+            }
         } catch (SQLException ex) {
-            throw new RuntimeException(String.format("Unexpected error when trying to load the %s database", this.benchmarkName), ex);
+            LOG.info("Load DB skip MySQL connection.");
+//            throw new RuntimeException(String.format("Unexpected error when trying to load the %s database", this.benchmarkName), ex);
         }
     }
 
@@ -281,14 +288,19 @@ public abstract class BenchmarkModule {
      */
     protected final void loadDatabase(Connection conn) {
         try {
-            Loader loader = this.makeLoaderImpl(conn);
-            if (loader != null) {
-                conn.setAutoCommit(false);
+            if(TPCCWorker.IS_MDTC) {
+                Loader loader = this.makeLoaderImpl(conn);
                 loader.load();
-                conn.commit();
+            } else {
+                Loader loader = this.makeLoaderImpl(conn);
+                if (loader != null) {
+                    conn.setAutoCommit(false);
+                    loader.load();
+                    conn.commit();
 
-                if (loader.getTableCounts().isEmpty() == false) {
-                    LOG.info("Table Counts:\n" + loader.getTableCounts());
+                    if (loader.getTableCounts().isEmpty() == false) {
+                        LOG.info("Table Counts:\n" + loader.getTableCounts());
+                    }
                 }
             }
         } catch (SQLException ex) {
