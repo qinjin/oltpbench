@@ -2,8 +2,7 @@ package com.oltpbenchmark.benchmarks.tpcc.mdtc.procedures;
 
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
-
+import org.apache.commons.math3.distribution.ZipfDistribution;
 import org.apache.log4j.Logger;
 
 import mdtc.api.transaction.client.ResultSet;
@@ -19,12 +18,14 @@ import com.oltpbenchmark.benchmarks.tpcc.TPCCWorker;
 public class BatchedNewOrderExt extends NewOrderExt {
     private static final Logger LOG = Logger.getLogger(NewOrderExt.class);
 
-    private static final AtomicInteger ORDER_ID = new AtomicInteger();
+//    private static final AtomicInteger ORDER_ID = new AtomicInteger();
 
     int txnType = 0;
-
+    ZipfDistribution zipf;
+    
     public BatchedNewOrderExt() {
         txnType = APIFactory.getTxnType();
+        zipf = new ZipfDistribution(10000, APIFactory.zipfExponent());
     }
 
     @Override
@@ -64,7 +65,9 @@ public class BatchedNewOrderExt extends NewOrderExt {
     private void batchecNewOrderTransaction(Random gen, int w_id, int d_id, int c_id, int o_ol_cnt, int o_all_local, int[] itemIDs, int[] supplierWarehouseIDs, int[] orderQuantities,
             TransactionClient txnClient, TPCCWorker w) {
         try {
-            int o_id = ORDER_ID.getAndIncrement();
+            
+            int o_id = zipf.sample();
+//            System.out.println(o_id);
             TxnStatement statement1 = MDTCUtil.buildPreparedStatement(true, NEWORDER_GET_WH_CQL, String.valueOf(w_id), w_id);
             TxnStatement statement2 = MDTCUtil.buildPreparedStatement(true, NEWORDER_GET_CUST_CQL, String.valueOf(w_id), w_id, d_id, c_id);
             TxnStatement statement3 = MDTCUtil.buildPreparedStatement(true, NEWORDER_GET_DIST_CQL, String.valueOf(w_id), w_id, d_id);
