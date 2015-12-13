@@ -24,8 +24,9 @@ public class MDTCResult {
     public double txnThroughput;
     public double cqlThroughput;
     public double avgLatency; //Average latency ms for succeed transactions.
+    public double zipfExponent;
 
-    private static final String INSERT_CQL = "INSERT INTO RESULT" + " (dc_no,view_length, exe_delay, type, num_clients, eva_type, latency, succeed_txns,"
+    private static final String INSERT_CQL = "INSERT INTO RESULT" + " (dc_no,view_length, exe_delay, type, num_clients, zipf_exponent, eva_type, latency, succeed_txns,"
             + " aborted_txns, num_cql_read, num_cql_write, benchmark_time, throughput, cql_throughput)" + " values (";
 
     public void saveToCassandra() {
@@ -33,7 +34,7 @@ public class MDTCResult {
         Cluster cluster = Cluster.builder().addContactPoint(APIFactory.getResultServer()).build();
         Session session = cluster.connect("mdtc_tpcc");
 
-        String cql = INSERT_CQL + dcNo + "," + viewLength + "," + executionDelay + "," + txnType + "," + numClients + ", '" + evaType + "' ," +avgLatency+", "+ succeedTxns + "," + abortedTxns + "," + numCQLRead + ","
+        String cql = INSERT_CQL + dcNo + "," + viewLength + "," + executionDelay + "," + txnType + "," + numClients + ", "+zipfExponent+", '" + evaType + "' ," +avgLatency+", "+ succeedTxns + "," + abortedTxns + "," + numCQLRead + ","
                 + numCQLWrite + "," + benchmarkTime + "," + txnThroughput + "," + cqlThroughput + ")";
         session.execute(cql);
 

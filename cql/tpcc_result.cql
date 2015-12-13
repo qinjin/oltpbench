@@ -9,6 +9,7 @@ CREATE TABLE RESULT (
   exe_delay INT,
   type INT, // (0:100%read-only, 1:100%write-only, 2:20%read+80%write, 3:80%read+20%write. Default:2)
   num_clients INT,
+  zipf_exponent DOUBLE,
   eva_type TEXT, //MDTC, TwoPL, OCC
   latency DOUBLE, //Average latency for succeed transactions
   succeed_txns INT,

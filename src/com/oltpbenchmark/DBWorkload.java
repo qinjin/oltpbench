@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 
 import mdtc.conf.ConfHandler;
+import mdtc.conf.SystemConfReader;
 import mdtc.conf.TranConfReader;
 import mdtc.impl.APIFactory;
 
@@ -667,17 +668,21 @@ public class DBWorkload {
     }
 
     private static void handleMDTCArgs(String[] args) {
+        int zipfExponent = -1;
         int evaType = -1;
         int viewLength = -1;
         int delay = -1;
         int txnType = -1;
         int numClients = -1;
         int index = 0;
-        for(int i=args.length -1; i>args.length - 6; i--){
+        for(int i=args.length -1; i>args.length - 7; i--){
             if(i>0){
                 try{
                     int value= Integer.parseInt(args[i]); 
                     switch(index){
+                        case 5:
+                            zipfExponent = value;
+                            break;
                         case 4:
                             evaType = value;
                             break;
@@ -703,7 +708,14 @@ public class DBWorkload {
             index++;
         }
         
-        ConfHandler.setBenchmarkParameters(evaType, viewLength, delay, txnType, numClients);
+        System.out.println("Benchmark parameters set to: zipfExponent="+zipfExponent+" evaType="+evaType+" viewlength=" + viewLength + " delay=" + delay + " txntype="
+                + txnType + " numclients=" + numClients);
+            TranConfReader.ZIPF_EXPONENT = zipfExponent;
+            TranConfReader.EVA_TYPE = evaType;
+            SystemConfReader.VIEW_LENGTH = viewLength;
+            TranConfReader.DELAY = delay;
+            TranConfReader.TXN_TYPE = txnType;
+            TranConfReader.NUM_CLIENTS = numClients;
     }
 
     /* buggy piece of shit of Java XPath implementation made me do it 
@@ -791,6 +803,7 @@ public class DBWorkload {
         LOG.info("Execution delay: " + APIFactory.getTransactionExecutionDelay());
         LOG.info("Type: " + APIFactory.getTxnType());
         LOG.info("Txn Clients number: " + numClients);
+        LOG.info("Zipf Exponent: " + APIFactory.zipfExponent());
         LOG.info("Evaluation type: " + APIFactory.getEvaluationType().toString());
         LOG.info("AverageLatency: " + avgLatency+ " ms");
         LOG.info("Succeed transactions count: " + succeedTxns);
@@ -817,6 +830,7 @@ public class DBWorkload {
         result.txnThroughput = txnThroughput;
         result.cqlThroughput = cqlThroughput;
         result.avgLatency = avgLatency;
+        result.zipfExponent = APIFactory.zipfExponent();
         
         result.saveToCassandra();
     }
