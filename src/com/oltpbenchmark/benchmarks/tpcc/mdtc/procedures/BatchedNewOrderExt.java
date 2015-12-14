@@ -2,6 +2,8 @@ package com.oltpbenchmark.benchmarks.tpcc.mdtc.procedures;
 
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.apache.commons.math3.distribution.ZipfDistribution;
 import org.apache.log4j.Logger;
 
@@ -18,14 +20,17 @@ import com.oltpbenchmark.benchmarks.tpcc.TPCCWorker;
 public class BatchedNewOrderExt extends NewOrderExt {
     private static final Logger LOG = Logger.getLogger(NewOrderExt.class);
 
-//    private static final AtomicInteger ORDER_ID = new AtomicInteger();
+    private static final AtomicInteger ORDER_ID = new AtomicInteger();
 
     int txnType = 0;
+    final boolean disableZipf;
     ZipfDistribution zipf;
     
     public BatchedNewOrderExt() {
         txnType = APIFactory.getTxnType();
-        zipf = new ZipfDistribution(10000, APIFactory.zipfExponent());
+        double zipfExponent = APIFactory.zipfExponent();
+        disableZipf = Double.valueOf(zipfExponent).equals(Double.valueOf(0));
+        zipf = disableZipf ? null : new ZipfDistribution(10000, zipfExponent);
     }
 
     @Override
@@ -66,7 +71,7 @@ public class BatchedNewOrderExt extends NewOrderExt {
             TransactionClient txnClient, TPCCWorker w) {
         try {
             
-            int o_id = zipf.sample();
+            int o_id = disableZipf ? ORDER_ID.getAndIncrement() : zipf.sample();
 //            System.out.println(o_id);
             TxnStatement statement1 = MDTCUtil.buildPreparedStatement(true, NEWORDER_GET_WH_CQL, String.valueOf(w_id), w_id);
             TxnStatement statement2 = MDTCUtil.buildPreparedStatement(true, NEWORDER_GET_CUST_CQL, String.valueOf(w_id), w_id, d_id, c_id);
