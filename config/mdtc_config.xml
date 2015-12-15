@@ -13,6 +13,7 @@
     <scalefactor>2</scalefactor>
     
     <!-- The workload -->
+    <!-- OBS! This is overwrite by transactions.conf  -->
     <terminals>10</terminals>
     <works>
         <work>

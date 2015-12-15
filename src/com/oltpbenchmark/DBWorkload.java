@@ -28,6 +28,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import mdtc.api.transaction.client.MDTCTxnClientProxy;
 import mdtc.conf.ConfHandler;
 import mdtc.conf.SystemConfReader;
 import mdtc.conf.TranConfReader;
@@ -491,6 +492,11 @@ public class DBWorkload {
         }
         assert(benchList.isEmpty() == false);
         assert(benchList.get(0) != null);
+        
+        // ----------------------------------------------------------------
+        // Start MDTCTxnClientProxy
+        // ----------------------------------------------------------------
+        MDTCTxnClientProxy.start();
         
         // Export StatementDialects
         if (isBooleanOptionSet(argsLine, "dialects-export")) {

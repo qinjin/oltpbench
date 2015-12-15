@@ -19,7 +19,7 @@
 	<classpathentry kind="lib" path="lib/slf4j-simple-1.7.5.jar"/>
 	<classpathentry kind="lib" path="lib/jtds-1.2.5.jar"/>
 	<classpathentry kind="lib" path="lib/commons-collections15-4.01.jar"/>
-	<classpathentry kind="lib" path="lib/commons-math3-3.0.jar"/>
+	<classpathentry kind="lib" path="lib/commons-math3-3.0.jar" sourcepath="/Users/qinjin/.m2/repository/org/apache/commons/commons-math3/3.0/commons-math3-3.0-sources.jar"/>
 	<classpathentry kind="lib" path="lib/jpa2.jar"/>
 	<classpathentry kind="lib" path="lib/openjpa-index-annotation.jar"/>
 	<classpathentry kind="lib" path="lib/jdo2-index.jar"/>

@@ -75,7 +75,6 @@ public abstract class Worker implements Runnable {
 		} catch (SQLException ex) {
 //		    throw new RuntimeException("Failed to connect to database", ex);
 		    this.conn = null;
-		    LOG.warn("Not connected to database");
 		}
 		
 		// Generate all the Procedures that we're going to need

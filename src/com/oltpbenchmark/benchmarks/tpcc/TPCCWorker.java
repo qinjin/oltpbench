@@ -63,7 +63,11 @@ public class TPCCWorker extends Worker {
     private static final AtomicInteger terminalId = new AtomicInteger(0);
 
     public static final boolean IS_MDTC = true;
-    public static final TransactionClient TXN_CLIENT = createTxnClient();
+    
+    //Txn client for Loading CQL to Cassandra (Created on need).
+    private static TransactionClient LOADER_TXN_CLIENT;
+    //Txn client for benchmark.
+    private final TransactionClient txnClient;
 
     public TPCCWorker(String terminalName, int terminalWarehouseID, int terminalDistrictLowerID, int terminalDistrictUpperID, TPCCBenchmark benchmarkModule, SimplePrinter terminalOutputArea,
             SimplePrinter errorOutputArea, int numWarehouses) throws SQLException {
@@ -78,9 +82,18 @@ public class TPCCWorker extends Worker {
         this.terminalOutputArea = terminalOutputArea;
         this.errorOutputArea = errorOutputArea;
         this.numWarehouses = numWarehouses;
+        this.txnClient = new TransactionClient();
+    }
+    
+    public synchronized static TransactionClient getLoaderTxnClient(){
+        if(LOADER_TXN_CLIENT == null){
+            LOADER_TXN_CLIENT = new TransactionClient();
+        }
+        
+        return LOADER_TXN_CLIENT;
     }
 
-    private static TransactionClient createTxnClient() {
+    private TransactionClient createTxnClient() {
         if (IS_MDTC) {
             return new TransactionClient();
         } else {
@@ -141,7 +154,7 @@ public class TPCCWorker extends Worker {
     private TransactionStatus executeMDTCWork(TransactionType nextTransaction) {
         try {
             MDTCProcedure proc = (MDTCProcedure) this.getProcedure(nextTransaction.getProcedureClass());
-            proc.run(TXN_CLIENT, gen, terminalWarehouseID, numWarehouses, terminalDistrictLowerID, terminalDistrictUpperID, this);
+            proc.run(txnClient, gen, terminalWarehouseID, numWarehouses, terminalDistrictLowerID, terminalDistrictUpperID, this);
             numReadRequest += proc.numCQLReadRequests();
             numWriteRequest += proc.numCQLWriteRequests();
             numSucceed += proc.numSucceed();
@@ -157,13 +170,13 @@ public class TPCCWorker extends Worker {
 
     public void printMDTCServerStatus() {
         if (IS_MDTC) {
-            TXN_CLIENT.printMDTCStatus();
+            txnClient.printMDTCStatus();
         }
     }
 
     public void closeMDTCServer() {
         if (IS_MDTC) {
-            TXN_CLIENT.close();
+            txnClient.close();
         }
     }
 

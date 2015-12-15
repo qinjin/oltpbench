@@ -56,7 +56,7 @@ public class MDTCLoader extends TPCCLoader {
 
     protected void truncateTable(String strTable) {
         LOG.debug("Truncating '" + strTable + "' ...");
-        TPCCWorker.TXN_CLIENT.executeStatement("TRUNCATE " + strTable);
+        TPCCWorker.getLoaderTxnClient().executeStatement("TRUNCATE " + strTable);
     }
 
     protected int loadWhse(int whseKount) {
@@ -82,7 +82,7 @@ public class MDTCLoader extends TPCCLoader {
             String statement = "INSERT INTO " + TPCCConstants.TABLENAME_WAREHOUSE + " (W_ID, W_YTD, W_TAX, W_NAME, W_STREET_1, W_STREET_2, W_CITY, W_STATE, W_ZIP) VALUES (" + warehouse.w_id + ", "
                     + warehouse.w_ytd + ", " + warehouse.w_tax + ", '" + warehouse.w_name + "', '" + warehouse.w_street_1 + "', '" + warehouse.w_street_2 + "', '" + warehouse.w_city + "', '"
                     + warehouse.w_state + "', '" + warehouse.w_zip + "')";
-            TPCCWorker.TXN_CLIENT.executeStatement(statement);
+            TPCCWorker.getLoaderTxnClient().executeStatement(statement);
         }
 
         LOG.debug("Done Whse Load");
@@ -128,7 +128,7 @@ public class MDTCLoader extends TPCCLoader {
 
             String statement = "INSERT INTO " + TPCCConstants.TABLENAME_ITEM + " (I_ID, I_NAME, I_PRICE, I_DATA, I_IM_ID) VALUES (" + item.i_id + ",'" + item.i_name + "', " + item.i_price + ", '"
                     + item.i_data + "', " + item.i_im_id + ")";
-            TPCCWorker.TXN_CLIENT.executeStatement(statement);
+            TPCCWorker.getLoaderTxnClient().executeStatement(statement);
         }
         LOG.debug("End Item Load for records " + k + " of " + t);
         return k;
@@ -184,7 +184,7 @@ public class MDTCLoader extends TPCCLoader {
                         + stock.s_w_id + "," + stock.s_i_id + ", " + stock.s_quantity + ", " + stock.s_ytd + ", " + stock.s_order_cnt + ", " + stock.s_remote_cnt + ", '" + stock.s_data + "', '"
                         + stock.s_dist_01 + "', '" + stock.s_dist_02 + "', '" + stock.s_dist_03 + "', '" + stock.s_dist_04 + "', '" + stock.s_dist_05 + "', '" + stock.s_dist_06 + "', '"
                         + stock.s_dist_07 + "', '" + stock.s_dist_08 + "', '" + stock.s_dist_09 + "', '" + stock.s_dist_10 + "')";
-                TPCCWorker.TXN_CLIENT.executeStatement(statement);
+                TPCCWorker.getLoaderTxnClient().executeStatement(statement);
                 if (k % 20000 == 0) {
                     LOG.debug("Writing stock record " + k + " of " + t);
                 }
@@ -224,7 +224,7 @@ public class MDTCLoader extends TPCCLoader {
                 String statement = "INSERT INTO " + TPCCConstants.TABLENAME_DISTRICT + " (D_W_ID, D_ID, D_YTD, D_TAX, D_NEXT_O_ID, D_NAME, D_STREET_1, D_STREET_2, D_CITY, D_STATE, D_ZIP) VALUES ("
                         + district.d_w_id + "," + district.d_id + ", " + district.d_ytd + ", " + district.d_tax + ", " + district.d_next_o_id + ", '" + district.d_name + "', '" + district.d_street_1
                         + "', '" + district.d_street_2 + "', '" + district.d_city + "', '" + district.d_state + "', '" + district.d_zip + "')";
-                TPCCWorker.TXN_CLIENT.executeStatement(statement);
+                TPCCWorker.getLoaderTxnClient().executeStatement(statement);
                 if(k%10==0){
                     LOG.debug("Writing district record " + k + " of " + t);
                 }
@@ -297,7 +297,7 @@ public class MDTCLoader extends TPCCLoader {
                             + customer.c_first + "', " + customer.c_credit_lim + ", " + customer.c_balance + ", " + customer.c_ytd_payment + ", " + customer.c_payment_cnt + ", "
                             + customer.c_delivery_cnt + ", '" + customer.c_street_1 + "', '" + customer.c_street_2 + "', '" + customer.c_city + "', '" + customer.c_state + "', '" + customer.c_zip
                             + "', '" + customer.c_phone + "', " + customer.c_since.getTime() + ", '" + customer.c_middle + "', '" + customer.c_data + "')";
-                    TPCCWorker.TXN_CLIENT.executeStatement(custStatement);
+                    TPCCWorker.getLoaderTxnClient().executeStatement(custStatement);
                     if (k % 20000 == 0) {
                         LOG.debug("Writing customer record " + k + " of " + t);
                     }
@@ -305,7 +305,7 @@ public class MDTCLoader extends TPCCLoader {
                     String historyStatement = "INSERT INTO " + TPCCConstants.TABLENAME_HISTORY + " (H_C_ID, H_C_D_ID, H_C_W_ID, H_D_ID, H_W_ID, H_DATE, H_AMOUNT, H_DATA) VALUES (" + history.h_c_id
                             + "," + history.h_c_d_id + ", " + history.h_c_w_id + ", " + history.h_d_id + ", " + history.h_w_id + ", " + history.h_date.getTime() + ", " + history.h_amount + ", '"
                             + history.h_data + "')";
-                    TPCCWorker.TXN_CLIENT.executeStatement(historyStatement);
+                    TPCCWorker.getLoaderTxnClient().executeStatement(historyStatement);
                     if (k % 20000 == 0) {
                         LOG.debug("Writing history record " + k + " of " + t);
                     }
@@ -368,7 +368,7 @@ public class MDTCLoader extends TPCCLoader {
                     String openOrderStatement = "INSERT INTO " + TPCCConstants.TABLENAME_OPENORDER + " (O_W_ID, O_D_ID, O_ID, O_C_ID, O_CARRIER_ID, O_OL_CNT, O_ALL_LOCAL, O_ENTRY_D) VALUES ("
                             + oorder.o_w_id + "," + oorder.o_d_id + ", " + oorder.o_id + ", " + oorder.o_c_id + ", " + oorder.o_carrier_id + ", " + oorder.o_ol_cnt + ", " + oorder.o_all_local + ", "
                             + oorder.o_entry_d + ")";
-                    TPCCWorker.TXN_CLIENT.executeStatement(openOrderStatement);
+                    TPCCWorker.getLoaderTxnClient().executeStatement(openOrderStatement);
                     if (k % 50000 == 0) {
                         LOG.debug("Writing openorder records " + k + " of " + t);
                     }
@@ -387,7 +387,7 @@ public class MDTCLoader extends TPCCLoader {
                         k++;
                         String newOrderStatement = "INSERT INTO " + TPCCConstants.TABLENAME_NEWORDER + " (NO_W_ID, NO_D_ID, NO_O_ID) VALUES (" + new_order.no_w_id + "," + new_order.no_d_id + ", "
                                 + new_order.no_o_id + ")";
-                        TPCCWorker.TXN_CLIENT.executeStatement(newOrderStatement);
+                        TPCCWorker.getLoaderTxnClient().executeStatement(newOrderStatement);
                         if (k % 50000 == 0) {
                             LOG.debug("Writing neworder records " + k + " of " + t);
                         }
@@ -417,7 +417,7 @@ public class MDTCLoader extends TPCCLoader {
                                 + " (OL_W_ID, OL_D_ID, OL_O_ID, OL_NUMBER, OL_I_ID, OL_DELIVERY_D, OL_AMOUNT, OL_SUPPLY_W_ID, OL_QUANTITY, OL_DIST_INFO) VALUES (" + order_line.ol_w_id + ","
                                 + order_line.ol_d_id + ", " + order_line.ol_o_id + ", " + order_line.ol_number + ", " + order_line.ol_i_id + ", " + order_line.ol_delivery_d + ", "
                                 + order_line.ol_amount + ", " + order_line.ol_supply_w_id + ", " + order_line.ol_quantity + ", '" + order_line.ol_dist_info + "')";
-                        TPCCWorker.TXN_CLIENT.executeStatement(orderLineStatement);
+                        TPCCWorker.getLoaderTxnClient().executeStatement(orderLineStatement);
                         if (k % 50000 == 0) {
                             LOG.debug("Writing orderline records " + k + " of " + t);
                         }

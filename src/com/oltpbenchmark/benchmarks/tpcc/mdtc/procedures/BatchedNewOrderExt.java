@@ -1,6 +1,7 @@
 package com.oltpbenchmark.benchmarks.tpcc.mdtc.procedures;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -14,6 +15,7 @@ import mdtc.api.transaction.data.IsolationLevel;
 import mdtc.impl.APIFactory;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.oltpbenchmark.benchmarks.tpcc.TPCCUtil;
 import com.oltpbenchmark.benchmarks.tpcc.TPCCWorker;
 
@@ -72,6 +74,8 @@ public class BatchedNewOrderExt extends NewOrderExt {
         try {
             
             int o_id = disableZipf ? ORDER_ID.getAndIncrement() : zipf.sample();
+//            int o_id = ORDER_ID.getAndIncrement();
+            
 //            System.out.println(o_id);
             TxnStatement statement1 = MDTCUtil.buildPreparedStatement(true, NEWORDER_GET_WH_CQL, String.valueOf(w_id), w_id);
             TxnStatement statement2 = MDTCUtil.buildPreparedStatement(true, NEWORDER_GET_CUST_CQL, String.valueOf(w_id), w_id, d_id, c_id);

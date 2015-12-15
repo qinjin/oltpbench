@@ -19,5 +19,5 @@ CREATE TABLE RESULT (
   benchmark_time BIGINT,
   throughput DOUBLE,
   cql_throughput DOUBLE,
-  PRIMARY KEY(dc_no, view_length, exe_delay, type, num_clients, eva_type)
+  PRIMARY KEY(dc_no, view_length, exe_delay, type, num_clients, eva_type, zipf_exponent)
 );
