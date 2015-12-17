@@ -31,6 +31,8 @@ public class NewOrderExt extends MDTCProcedure {
     public static final String NEWORDER_GET_STOCK_YTD = "NEWORDER_GET_STOCK_YTD";
     public static final String NEWORDER_GET_ORDER_CNT = "NEWORDER_GET_ORDER_CNT";
     public static final String NEWORDER_GET_REMOTE_CNT = "NEWORDER_GET_REMOTE_CNT";
+    public static final String NEWORDER_GET_OPEN_ORDER = "NEWORDER_GET_ORDER";
+    public static final String NEWORDER_GET_NEW_ORDER = "NEWORDER_GET_NEW_ORDER";
 
     public final String STMT_GET_CUST_CQL = "SELECT C_DISCOUNT, C_LAST, C_CREDIT" + "  FROM " + TPCCConstants.TABLENAME_CUSTOMER + " WHERE C_W_ID = ? AND C_D_ID = ? AND C_ID = ?";
     public final String STMT_GET_WH_CQL = "SELECT W_TAX" + "  FROM " + TPCCConstants.TABLENAME_WAREHOUSE + " WHERE W_ID = ?";
@@ -49,6 +51,8 @@ public class NewOrderExt extends MDTCProcedure {
     public final String STMT_GET_STOCK_YTD = "SELECT S_YTD FROM " + TPCCConstants.TABLENAME_STOCK + " WHERE S_W_ID = ? AND S_I_ID = ?";
     public final String STMT_GET_ORDER_CNT = "SELECT S_ORDER_CNT FROM " + TPCCConstants.TABLENAME_STOCK + " WHERE S_W_ID = ? AND S_I_ID = ?";
     public final String STMT_GET_REMOTE_CNT = "SELECT S_REMOTE_CNT FROM " + TPCCConstants.TABLENAME_STOCK + " WHERE S_W_ID = ? AND S_I_ID = ?";
+    public final String STMT_GET_OPEN_ORDER = "SELECT O_C_ID FROM " + TPCCConstants.TABLENAME_OPENORDER + " WHERE O_W_ID = ? AND O_D_ID = ? AND O_ID = ?";
+    public final String STMT_GET_NEW_ORDER = "SELECT NO_O_ID FROM " + TPCCConstants.TABLENAME_NEWORDER + " WHERE NO_W_ID = ? AND NO_D_ID = ? AND NO_O_ID = ?";
 
     protected int numItems;
     
@@ -101,6 +105,8 @@ public class NewOrderExt extends MDTCProcedure {
         txnClient.setPrepareStatement(NEWORDER_GET_STOCK_YTD, STMT_GET_STOCK_YTD);
         txnClient.setPrepareStatement(NEWORDER_GET_ORDER_CNT, STMT_GET_ORDER_CNT);
         txnClient.setPrepareStatement(NEWORDER_GET_REMOTE_CNT, STMT_GET_REMOTE_CNT);
+        txnClient.setPrepareStatement(NEWORDER_GET_OPEN_ORDER, STMT_GET_OPEN_ORDER);
+        txnClient.setPrepareStatement(NEWORDER_GET_NEW_ORDER, STMT_GET_NEW_ORDER);
     }
 
     private void newOrderTransaction(int w_id, int d_id, int c_id, int o_ol_cnt, int o_all_local, int[] itemIDs, int[] supplierWarehouseIDs, int[] orderQuantities, TransactionClient txnClient,
