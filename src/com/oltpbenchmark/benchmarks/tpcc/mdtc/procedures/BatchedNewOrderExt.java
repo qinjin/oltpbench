@@ -82,7 +82,7 @@ public class BatchedNewOrderExt extends NewOrderExt {
             TxnStatement statement1 = MDTCUtil.buildPreparedStatement(true, NEWORDER_GET_DIST_CQL, String.valueOf(w_id), w_id);
             TxnStatement statement2 = MDTCUtil.buildPreparedStatement(true, NEWORDER_GET_OPEN_ORDER, String.valueOf(o_id), w_id, d_id, o_id);
             TxnStatement statement3 = MDTCUtil.buildPreparedStatement(true, NEWORDER_GET_NEW_ORDER, String.valueOf(o_id), w_id, d_id, o_id);
-            TxnStatement statement4 = MDTCUtil.buildPreparedStatement(false, NEWORDER_UPDATE_DIST_CQL, String.valueOf(w_id), o_id, w_id, d_id);
+            TxnStatement statement4 = MDTCUtil.buildPreparedStatement(false, NEWORDER_UPDATE_DIST_CQL, String.valueOf(o_id), o_id, w_id, d_id);
             TxnStatement statement5 = MDTCUtil
                     .buildPreparedStatement(false, NEWORDER_INSERT_ORDER_CQL, String.valueOf(o_id), o_id, d_id, w_id, c_id, System.currentTimeMillis(), o_ol_cnt, o_all_local);
             TxnStatement statement6 = MDTCUtil.buildPreparedStatement(false, NEWORDER_INSERT_NEW_ORDER_CQL, String.valueOf(o_id), o_id, d_id, w_id);
