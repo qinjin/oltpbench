@@ -23,6 +23,7 @@ public class BatchedNewOrderExt extends NewOrderExt {
     private static final Logger LOG = Logger.getLogger(NewOrderExt.class);
 
     private static final AtomicInteger ORDER_ID = new AtomicInteger();
+    private static final Random r = new Random();
 
     int txnType = 0;
     final boolean disableZipf;
@@ -73,7 +74,7 @@ public class BatchedNewOrderExt extends NewOrderExt {
             TransactionClient txnClient, TPCCWorker w) {
         try {
             
-            int o_id = disableZipf ? ORDER_ID.getAndIncrement() : zipf.sample();
+            int o_id = disableZipf ? r.nextInt(100000) : zipf.sample();
 //            int o_id = ORDER_ID.getAndIncrement();
             
 //            System.out.println(o_id);

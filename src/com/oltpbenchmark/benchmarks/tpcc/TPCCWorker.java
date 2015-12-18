@@ -117,6 +117,7 @@ public class TPCCWorker extends Worker {
         return numWriteRequest;
     }
     
+    //Succeed transaction latency.
     public long getLatency(){
         return latency;
     }
