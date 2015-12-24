@@ -34,6 +34,7 @@ public class BatchedNewOrderExt extends NewOrderExt {
         double zipfExponent = APIFactory.zipfExponent();
         disableZipf = Double.valueOf(zipfExponent).equals(Double.valueOf(0));
         zipf = disableZipf ? null : new ZipfDistribution(10000, zipfExponent);
+        r.setSeed(System.currentTimeMillis() + APIFactory.getDatacenterID() * 1001);
     }
 
     @Override
@@ -74,7 +75,7 @@ public class BatchedNewOrderExt extends NewOrderExt {
             TransactionClient txnClient, TPCCWorker w) {
         try {
             
-            int o_id = disableZipf ? r.nextInt(100000) : zipf.sample();
+            int o_id = disableZipf ? r.nextInt(100000000) : zipf.sample();
 //            int o_id = ORDER_ID.getAndIncrement();
             
 //            System.out.println(o_id);
