@@ -1,8 +1,10 @@
 package com.oltpbenchmark.benchmarks.tpcc.mdtc.procedures;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.math3.distribution.ZipfDistribution;
@@ -15,25 +17,80 @@ import mdtc.api.transaction.data.IsolationLevel;
 import mdtc.impl.APIFactory;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
+import com.google.common.collect.Queues;
 import com.oltpbenchmark.benchmarks.tpcc.TPCCUtil;
 import com.oltpbenchmark.benchmarks.tpcc.TPCCWorker;
 
 public class BatchedNewOrderExt extends NewOrderExt {
-    private static final Logger LOG = Logger.getLogger(NewOrderExt.class);
+    private static final Logger LOG = Logger.getLogger(BatchedNewOrderExt.class);
 
-    private static final AtomicInteger ORDER_ID = new AtomicInteger();
     private static final Random r = new Random();
+    private static final int KEY_SPACE = 10000;
+    private static final int ZIPF_QUEUE_SIZE = 10000;
+    
+    private static final LinkedBlockingQueue<Integer> zipfOID = Queues.newLinkedBlockingQueue();
+    
+    public static void initZipf(){
+        double zipfExponent = APIFactory.zipfExponent();
+        boolean disableZipf = Double.valueOf(zipfExponent).equals(Double.valueOf(0));
+        if(!disableZipf){
+            System.out.println("Started to init zipf with keyspace="+KEY_SPACE+" zipfQueueSize="+ZIPF_QUEUE_SIZE+"...");
+            long start = System.currentTimeMillis();
+            initByMultiThreads(zipfExponent, 10);
+//            initByOneThread(zipfExponent, start);
+            System.out.println("Init "+zipfOID.size()+" zipf sample took "+(System.currentTimeMillis() - start)+" ms.");
+        } else {
+            System.out.println("Zipf is disabled!");
+        }
+    }
+
+    private static void initByOneThread(double zipfExponent, long startMs) {
+        final ZipfDistribution zipf = new ZipfDistribution(KEY_SPACE, zipfExponent);
+        for (int i = 0; i < ZIPF_QUEUE_SIZE; i++) {
+            if (i % 100 == 0) {
+                System.out.println("Generate " + i + " zipf took " + (System.currentTimeMillis() - startMs) + " ms.");
+            }
+            zipfOID.add(zipf.sample());
+        }
+    }
+
+    private static void initByMultiThreads(final double zipfExponent, final int numThread) {
+        final ZipfDistribution zipf = new ZipfDistribution(KEY_SPACE, zipfExponent);
+        final CountDownLatch countDownLatch = new CountDownLatch(numThread);
+        for(int i=0; i< numThread; i++){
+            Runnable r = new Runnable() {
+                
+                @Override
+                public void run() {
+                    long start = System.currentTimeMillis();
+                    for (int j = 0; j < ZIPF_QUEUE_SIZE / numThread; j++) {
+                        zipfOID.add(zipf.sample());
+                        if (j % 100 == 0) {
+                            System.out.println("Thread " + Thread.currentThread().getId() + " Generate " + j + " zipf took " + (System.currentTimeMillis() - start) + " ms.");
+                        }
+                    }
+
+                    countDownLatch.countDown();
+                }
+            };
+            Thread t = new Thread(r);
+            t.start();
+        }
+        
+        try {
+            countDownLatch.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
 
     int txnType = 0;
     final boolean disableZipf;
-    ZipfDistribution zipf;
     
     public BatchedNewOrderExt() {
         txnType = APIFactory.getTxnType();
         double zipfExponent = APIFactory.zipfExponent();
         disableZipf = Double.valueOf(zipfExponent).equals(Double.valueOf(0));
-        zipf = disableZipf ? null : new ZipfDistribution(10000, zipfExponent);
         r.setSeed(System.currentTimeMillis() + APIFactory.getDatacenterID() * 1001);
     }
 
@@ -75,7 +132,7 @@ public class BatchedNewOrderExt extends NewOrderExt {
             TransactionClient txnClient, TPCCWorker w) {
         try {
             
-            int o_id = disableZipf ? r.nextInt(100000000) : zipf.sample();
+            int o_id = disableZipf ? r.nextInt(KEY_SPACE) : zipfOID.take();
 //            int o_id = ORDER_ID.getAndIncrement();
             
 //            System.out.println(o_id);
@@ -187,6 +244,9 @@ public class BatchedNewOrderExt extends NewOrderExt {
         } catch (UserAbortException userEx) {
             LOG.debug("Caught an expected error in New Order");
             throw userEx;
+        } catch (InterruptedException e) {
+            LOG.debug("Caught an expected error in New Order");
+            e.printStackTrace();
         } finally {
         }
     }

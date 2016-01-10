@@ -58,6 +58,7 @@ import com.oltpbenchmark.api.TransactionType;
 import com.oltpbenchmark.api.TransactionTypes;
 import com.oltpbenchmark.api.Worker;
 import com.oltpbenchmark.benchmarks.tpcc.TPCCWorker;
+import com.oltpbenchmark.benchmarks.tpcc.mdtc.procedures.BatchedNewOrderExt;
 import com.oltpbenchmark.types.DatabaseType;
 import com.oltpbenchmark.util.ClassUtil;
 import com.oltpbenchmark.util.FileUtil;
@@ -722,6 +723,11 @@ public class DBWorkload {
             TranConfReader.DELAY = delay;
             TranConfReader.TXN_TYPE = txnType;
             TranConfReader.NUM_CLIENTS = numClients;
+            
+        boolean disableZipf = Double.valueOf(zipfExponent).equals(Double.valueOf(0));
+        if (!disableZipf) {
+            BatchedNewOrderExt.initZipf();
+        }
     }
 
     /* buggy piece of shit of Java XPath implementation made me do it 
@@ -798,7 +804,7 @@ public class DBWorkload {
         long benchmarkTime = r.nanoSeconds;
         long succeedTxnLatency = Worker.latency.longValue();
         
-        double txnThroughput = (double)(succeedTxns + abortedTxns) * 1000000000d / benchmarkTime;
+        double txnThroughput = (double)(succeedTxns) * 1000000000d / benchmarkTime;
         double cqlThroughput = (double)(numCQLRead + numCQLWrite) * 1000000000d / benchmarkTime;
         double avgLatency = (double) succeedTxnLatency /succeedTxns;
         
