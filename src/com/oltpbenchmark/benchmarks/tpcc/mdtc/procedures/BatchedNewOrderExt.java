@@ -1,5 +1,6 @@
 package com.oltpbenchmark.benchmarks.tpcc.mdtc.procedures;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
@@ -25,8 +26,8 @@ public class BatchedNewOrderExt extends NewOrderExt {
     private static final Logger LOG = Logger.getLogger(BatchedNewOrderExt.class);
 
     private static final Random r = new Random();
-    private static final int KEY_SPACE = 10000;
-    private static final int ZIPF_QUEUE_SIZE = 10000;
+    private static final int RANDOM_KEY_SPACE = 100000000;
+    private static final int ZIPF_KEY_SPACE = 10000;
     
     private static final LinkedBlockingQueue<Integer> zipfOID = Queues.newLinkedBlockingQueue();
     
@@ -34,7 +35,7 @@ public class BatchedNewOrderExt extends NewOrderExt {
         double zipfExponent = APIFactory.zipfExponent();
         boolean disableZipf = Double.valueOf(zipfExponent).equals(Double.valueOf(0));
         if(!disableZipf){
-            System.out.println("Started to init zipf with keyspace="+KEY_SPACE+" zipfQueueSize="+ZIPF_QUEUE_SIZE+"...");
+            System.out.println("Started to init zipf with keyspace="+ZIPF_KEY_SPACE+" zipfQueueSize="+ZIPF_KEY_SPACE+"...");
             long start = System.currentTimeMillis();
             initByMultiThreads(zipfExponent, 10);
 //            initByOneThread(zipfExponent, start);
@@ -45,8 +46,8 @@ public class BatchedNewOrderExt extends NewOrderExt {
     }
 
     private static void initByOneThread(double zipfExponent, long startMs) {
-        final ZipfDistribution zipf = new ZipfDistribution(KEY_SPACE, zipfExponent);
-        for (int i = 0; i < ZIPF_QUEUE_SIZE; i++) {
+        final ZipfDistribution zipf = new ZipfDistribution(ZIPF_KEY_SPACE, zipfExponent);
+        for (int i = 0; i < ZIPF_KEY_SPACE; i++) {
             if (i % 100 == 0) {
                 System.out.println("Generate " + i + " zipf took " + (System.currentTimeMillis() - startMs) + " ms.");
             }
@@ -55,7 +56,7 @@ public class BatchedNewOrderExt extends NewOrderExt {
     }
 
     private static void initByMultiThreads(final double zipfExponent, final int numThread) {
-        final ZipfDistribution zipf = new ZipfDistribution(KEY_SPACE, zipfExponent);
+        final ZipfDistribution zipf = new ZipfDistribution(ZIPF_KEY_SPACE, zipfExponent);
         final CountDownLatch countDownLatch = new CountDownLatch(numThread);
         for(int i=0; i< numThread; i++){
             Runnable r = new Runnable() {
@@ -63,7 +64,7 @@ public class BatchedNewOrderExt extends NewOrderExt {
                 @Override
                 public void run() {
                     long start = System.currentTimeMillis();
-                    for (int j = 0; j < ZIPF_QUEUE_SIZE / numThread; j++) {
+                    for (int j = 0; j < ZIPF_KEY_SPACE / numThread; j++) {
                         zipfOID.add(zipf.sample());
                         if (j % 100 == 0) {
                             System.out.println("Thread " + Thread.currentThread().getId() + " Generate " + j + " zipf took " + (System.currentTimeMillis() - start) + " ms.");
@@ -132,11 +133,7 @@ public class BatchedNewOrderExt extends NewOrderExt {
             TransactionClient txnClient, TPCCWorker w) {
         try {
             
-            int o_id = disableZipf ? r.nextInt(KEY_SPACE) : zipfOID.take();
-//            int o_id = ORDER_ID.getAndIncrement();
-            
-//            System.out.println(o_id);
-            
+            int o_id = disableZipf ? r.nextInt(RANDOM_KEY_SPACE) : zipfOID.take();
             TxnStatement statement1 = MDTCUtil.buildPreparedStatement(true, NEWORDER_GET_DIST_CQL, String.valueOf(o_id), w_id);
             TxnStatement statement2 = MDTCUtil.buildPreparedStatement(true, NEWORDER_GET_OPEN_ORDER, String.valueOf(o_id), w_id, d_id, o_id);
             TxnStatement statement3 = MDTCUtil.buildPreparedStatement(true, NEWORDER_GET_NEW_ORDER, String.valueOf(o_id), w_id, d_id, o_id);
@@ -151,6 +148,7 @@ public class BatchedNewOrderExt extends NewOrderExt {
             List<TxnStatement> allWriteStatements = Lists.newArrayList(statement4, statement5, statement6);
             // Write-Read txns
             List<TxnStatement> allStatements = Lists.newArrayList(statement4, statement1, statement5, statement2, statement6, statement3);
+            Collections.shuffle(allStatements);
             // Selected statements.
             List<TxnStatement> statements = Lists.newArrayList();
             // Number of statements per transaction: 20%:1, 20%2, 60%:3.
@@ -158,10 +156,10 @@ public class BatchedNewOrderExt extends NewOrderExt {
             float randomFloat = gen.nextFloat();
             if (randomFloat < 0.2f) {
                 numStatments = 1;
-            } else if (randomFloat < 0.8f) {
-                numStatments = 3;
-            } else {
+            } else if (randomFloat > 0.8f) {
                 numStatments = 2;
+            } else {
+                numStatments = 3;
             }
             switch (txnType) {
                 case 0:
