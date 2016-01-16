@@ -675,7 +675,7 @@ public class DBWorkload {
     }
 
     private static void handleMDTCArgs(String[] args) {
-        int zipfExponent = -1;
+        double zipfExponent = -1;
         int evaType = -1;
         int viewLength = -1;
         int delay = -1;
@@ -685,25 +685,26 @@ public class DBWorkload {
         for(int i=args.length -1; i>args.length - 7; i--){
             if(i>0){
                 try{
-                    int value= Integer.parseInt(args[i]); 
+                    
+                    double value= Double.parseDouble(args[i]); 
                     switch(index){
                         case 5:
                             zipfExponent = value;
                             break;
                         case 4:
-                            evaType = value;
+                            evaType = (int)value;
                             break;
                         case 3:
-                            viewLength = value;
+                            viewLength = (int)value;
                             break;
                         case 2:
-                            delay = value;
+                            delay = (int)value;
                             break;
                         case 1:
-                            txnType = value;
+                            txnType = (int)value;
                             break;
                         case 0:
-                            numClients = value;
+                            numClients = (int)value;
                             break;
                         default:
                             break;
