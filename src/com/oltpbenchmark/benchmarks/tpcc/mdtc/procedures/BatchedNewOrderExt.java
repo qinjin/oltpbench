@@ -31,6 +31,8 @@ public class BatchedNewOrderExt extends NewOrderExt {
     
     private static final LinkedBlockingQueue<Integer> zipfOID = Queues.newLinkedBlockingQueue();
     
+    public static final List<String> allKeys = Lists.newArrayList();
+    
     public static void initZipf(){
         double zipfExponent = APIFactory.zipfExponent();
         boolean disableZipf = Double.valueOf(zipfExponent).equals(Double.valueOf(0));
@@ -39,7 +41,11 @@ public class BatchedNewOrderExt extends NewOrderExt {
             long start = System.currentTimeMillis();
             initByMultiThreads(zipfExponent, 10);
 //            initByOneThread(zipfExponent, start);
-            System.out.println("Init "+zipfOID.size()+" zipf sample took "+(System.currentTimeMillis() - start)+" ms.");
+//            System.out.println("Init "+zipfOID.size()+" zipf sample took "+(System.currentTimeMillis() - start)+" ms.");
+//            System.out.println("All zipf ids:");
+            for(int id : Lists.newArrayList(zipfOID)){
+                System.out.println(id);
+            }
         } else {
             System.out.println("Zipf is disabled!");
         }
@@ -231,7 +237,7 @@ public class BatchedNewOrderExt extends NewOrderExt {
                     }
                     break;
             }
-
+            
             ResultSet result = txnClient.executeMultiStatementsTxn(IsolationLevel.OneCopySerilizible, statements);
             if (result.isSucceed()) {
                 numSucceed++;
