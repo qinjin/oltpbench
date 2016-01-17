@@ -22,8 +22,10 @@ package com.oltpbenchmark;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -53,6 +55,7 @@ import org.hibernate.jdbc.Work;
 import ch.ethz.ssh2.crypto.digest.MAC;
 
 import com.google.common.collect.Lists;
+import com.google.common.io.Files;
 import com.oltpbenchmark.api.BenchmarkModule;
 import com.oltpbenchmark.api.TransactionType;
 import com.oltpbenchmark.api.TransactionTypes;
@@ -846,6 +849,33 @@ public class DBWorkload {
         result.zipfExponent = APIFactory.zipfExponent();
         
         result.saveToCassandra();
+        
+        // Save all latency.
+        String allLatencyFileName = "allLatency_" + result.dcNo + "_" + result.viewLength + "_" + result.executionDelay + "_" + result.txnType + "_" + result.numClients + "_" + result.evaType + "_"
+                + System.currentTimeMillis();
+        LOG.info("Save all latency to " + allLatencyFileName);
+        File f = new File("/home/qinjin/mdtc/oltpbench/" + allLatencyFileName);
+        if (f.exists()) {
+            f.delete();
+            LOG.warn("Delete an existing latency file " + allLatencyFileName+". This should not happen!");
+        }
+
+        try {
+            Iterator<Long> iter = Worker.allLatency.iterator();
+            boolean isFirst = true;
+            while (iter.hasNext()) {
+                Long latency = iter.next();
+                if (isFirst) {
+                    Files.append(String.valueOf(latency), f, Charset.defaultCharset());
+                    isFirst = false;
+                } else {
+                    Files.append("," + String.valueOf(latency), f, Charset.defaultCharset());
+                }
+            }
+        } catch (Exception e) {
+            LOG.warn("Can not save all latency to file for " + e);
+            e.printStackTrace();
+        }
     }
 
     private static void printUsage(Options options) {

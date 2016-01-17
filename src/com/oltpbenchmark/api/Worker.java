@@ -8,11 +8,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.log4j.Logger;
 
+import com.google.common.collect.Queues;
 import com.oltpbenchmark.LatencyRecord;
 import com.oltpbenchmark.Phase;
 import com.oltpbenchmark.SubmittedProcedure;
@@ -57,6 +59,7 @@ public abstract class Worker implements Runnable {
 	public static AtomicInteger numSucceedTxns = new AtomicInteger(), numAbortedTxns = new AtomicInteger(), numCQLRead = new AtomicInteger(), numCQLWrite = new AtomicInteger();
 	public static AtomicLong benchmarkTime = new AtomicLong();
 	public static AtomicLong latency = new AtomicLong();
+	public static final LinkedBlockingQueue<Long> allLatency = Queues.newLinkedBlockingQueue();
 	
 	public Worker(BenchmarkModule benchmarkModule, int id) {
 		this.id = id;
@@ -338,6 +341,7 @@ work:
             latency.addAndGet(tpccWorker.getLatency());
             long time = System.nanoTime() - startTime;
             benchmarkTime.addAndGet(time);
+            allLatency.addAll(tpccWorker.allLatency);
             
             LOG.info("**********************************************************************************");
             tpccWorker.printMDTCServerStatus();

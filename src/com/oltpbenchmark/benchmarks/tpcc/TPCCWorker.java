@@ -29,12 +29,14 @@ package com.oltpbenchmark.benchmarks.tpcc;
 
 import java.sql.SQLException;
 import java.util.Random;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.log4j.Logger;
 
 import mdtc.api.transaction.client.TransactionClient;
 
+import com.google.common.collect.Queues;
 import com.oltpbenchmark.api.Procedure.UserAbortException;
 import com.oltpbenchmark.api.TransactionType;
 import com.oltpbenchmark.api.Worker;
@@ -68,6 +70,8 @@ public class TPCCWorker extends Worker {
     private static TransactionClient LOADER_TXN_CLIENT;
     //Txn client for benchmark.
     private final TransactionClient txnClient;
+    
+    public static final LinkedBlockingQueue<Long> allLatency = Queues.newLinkedBlockingQueue();
 
     public TPCCWorker(String terminalName, int terminalWarehouseID, int terminalDistrictLowerID, int terminalDistrictUpperID, TPCCBenchmark benchmarkModule, SimplePrinter terminalOutputArea,
             SimplePrinter errorOutputArea, int numWarehouses) throws SQLException {
@@ -161,6 +165,7 @@ public class TPCCWorker extends Worker {
             numSucceed += proc.numSucceed();
             numAborted += proc.numAborted();
             latency += proc.latency();
+            allLatency.add(proc.latency());
         } catch (Throwable ex) {
             ex.printStackTrace();
             LOG.warn("Warning: Rollback transaction: "+ex.getMessage());

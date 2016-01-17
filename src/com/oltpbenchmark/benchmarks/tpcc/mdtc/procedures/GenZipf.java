@@ -1,7 +1,6 @@
 package com.oltpbenchmark.benchmarks.tpcc.mdtc.procedures;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Iterator;
 import java.util.concurrent.CountDownLatch;
@@ -9,9 +8,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.commons.math3.distribution.ZipfDistribution;
 
-import mdtc.impl.APIFactory;
-
-import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 import com.google.common.io.Files;
 
@@ -19,14 +15,14 @@ public class GenZipf {
     private static final LinkedBlockingQueue<Integer> zipfID = Queues.newLinkedBlockingQueue();
 
     public static void main(String[] args) throws Exception {
-        initZipf(1d, 100000, 20000);
+        initZipf(1d, 100000, 30000);
     }
 
     public static void initZipf(double zipfExponent, int zipfKeyspace, int zipfQueueSize) throws Exception {
         System.out.println("Started to init zipf with Exponent="+zipfExponent+" Keyspace=" + zipfKeyspace + " ResultSize=" + zipfQueueSize + "...");
         initByMultiThreads(zipfExponent, 10, zipfKeyspace, zipfQueueSize);
 
-        File file = new File("zipf_100000.txt");
+        File file = new File("/home/qinjin/mdtc/oltpbench/zipf_100000.txt");
         if(file.exists()){
             file.delete();
         }
@@ -77,4 +73,14 @@ public class GenZipf {
             e.printStackTrace();
         }
     }
+    
+//    private static void initByOneThread(double zipfExponent, long startMs) {
+//        final ZipfDistribution zipf = new ZipfDistribution(ZIPF_KEY_SPACE, zipfExponent);
+//        for (int i = 0; i < ZIPF_KEY_SPACE; i++) {
+//            if (i % 100 == 0) {
+//                System.out.println("Generate " + i + " zipf took " + (System.currentTimeMillis() - startMs) + " ms.");
+//            }
+//            zipfOID.add(zipf.sample());
+//        }
+//    }
 }

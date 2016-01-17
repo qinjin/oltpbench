@@ -1,24 +1,25 @@
 package com.oltpbenchmark.benchmarks.tpcc.mdtc.procedures;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.commons.math3.distribution.ZipfDistribution;
 import org.apache.log4j.Logger;
 
 import mdtc.api.transaction.client.ResultSet;
 import mdtc.api.transaction.client.TransactionClient;
 import mdtc.api.transaction.client.TxnStatement;
 import mdtc.api.transaction.data.IsolationLevel;
+import mdtc.conf.TranConfReader.EvaluationType;
 import mdtc.impl.APIFactory;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
+import com.google.common.io.Files;
 import com.oltpbenchmark.benchmarks.tpcc.TPCCUtil;
 import com.oltpbenchmark.benchmarks.tpcc.TPCCWorker;
 
@@ -26,8 +27,7 @@ public class BatchedNewOrderExt extends NewOrderExt {
     private static final Logger LOG = Logger.getLogger(BatchedNewOrderExt.class);
 
     private static final Random r = new Random();
-    private static final int RANDOM_KEY_SPACE = 100000000;
-    private static final int ZIPF_KEY_SPACE = 10000;
+    private static final int RANDOM_KEY_SPACE = 100000;
     
     private static final LinkedBlockingQueue<Integer> zipfOID = Queues.newLinkedBlockingQueue();
     
@@ -37,59 +37,36 @@ public class BatchedNewOrderExt extends NewOrderExt {
         double zipfExponent = APIFactory.zipfExponent();
         boolean disableZipf = Double.valueOf(zipfExponent).equals(Double.valueOf(0));
         if(!disableZipf){
-            System.out.println("Started to init zipf with keyspace="+ZIPF_KEY_SPACE+" zipfQueueSize="+ZIPF_KEY_SPACE+"...");
-            long start = System.currentTimeMillis();
-            initByMultiThreads(zipfExponent, 10);
-//            initByOneThread(zipfExponent, start);
-//            System.out.println("Init "+zipfOID.size()+" zipf sample took "+(System.currentTimeMillis() - start)+" ms.");
-//            System.out.println("All zipf ids:");
-            for(int id : Lists.newArrayList(zipfOID)){
-                System.out.println(id);
+            File f = new File("/home/qinjin/mdtc/oltpbench/zipf_100000.txt");
+            if(f.exists()){
+                throw new RuntimeException("Zipf data file zipf_100000.txt does not exist!");
             }
+            
+            System.out.println("Started to load zipf from file "+f);
+            try {
+                loadZipfFromFile(f, zipfOID);
+            } catch (Exception e) {
+                LOG.error("Could not load zipf from file "+ f+ " Exception: "+e.getMessage());
+                e.printStackTrace();
+            }
+            System.out.println("Loaded "+zipfOID.size()+" zipf from file.");
         } else {
             System.out.println("Zipf is disabled!");
         }
     }
 
-    private static void initByOneThread(double zipfExponent, long startMs) {
-        final ZipfDistribution zipf = new ZipfDistribution(ZIPF_KEY_SPACE, zipfExponent);
-        for (int i = 0; i < ZIPF_KEY_SPACE; i++) {
-            if (i % 100 == 0) {
-                System.out.println("Generate " + i + " zipf took " + (System.currentTimeMillis() - startMs) + " ms.");
+    //Load zipf from a comma separated file.
+    private static void loadZipfFromFile(File f, LinkedBlockingQueue<Integer> zipfoid) throws IOException {
+        List<String> lines = Files.readLines(f, Charset.defaultCharset());
+        for(String line : lines){
+            String[] zipfs = line.split(",");
+            for(String zipfStr : zipfs){
+                Integer zipf = Integer.parseInt(zipfStr);
+                zipfoid.add(zipf);
             }
-            zipfOID.add(zipf.sample());
         }
     }
 
-    private static void initByMultiThreads(final double zipfExponent, final int numThread) {
-        final ZipfDistribution zipf = new ZipfDistribution(ZIPF_KEY_SPACE, zipfExponent);
-        final CountDownLatch countDownLatch = new CountDownLatch(numThread);
-        for(int i=0; i< numThread; i++){
-            Runnable r = new Runnable() {
-                
-                @Override
-                public void run() {
-                    long start = System.currentTimeMillis();
-                    for (int j = 0; j < ZIPF_KEY_SPACE / numThread; j++) {
-                        zipfOID.add(zipf.sample());
-                        if (j % 100 == 0) {
-                            System.out.println("Thread " + Thread.currentThread().getId() + " Generate " + j + " zipf took " + (System.currentTimeMillis() - start) + " ms.");
-                        }
-                    }
-
-                    countDownLatch.countDown();
-                }
-            };
-            Thread t = new Thread(r);
-            t.start();
-        }
-        
-        try {
-            countDownLatch.await();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
 
     int txnType = 0;
     final boolean disableZipf;
@@ -154,7 +131,9 @@ public class BatchedNewOrderExt extends NewOrderExt {
             List<TxnStatement> allWriteStatements = Lists.newArrayList(statement4, statement5, statement6);
             // Write-Read txns
             List<TxnStatement> allStatements = Lists.newArrayList(statement4, statement1, statement5, statement2, statement6, statement3);
-            Collections.shuffle(allStatements);
+            if(APIFactory.getEvaluationType() != EvaluationType.MDTC){
+                Collections.shuffle(allStatements);
+            }
             // Selected statements.
             List<TxnStatement> statements = Lists.newArrayList();
             // Number of statements per transaction: 20%:1, 20%2, 60%:3.
