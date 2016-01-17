@@ -38,7 +38,7 @@ public class BatchedNewOrderExt extends NewOrderExt {
         boolean disableZipf = Double.valueOf(zipfExponent).equals(Double.valueOf(0));
         if(!disableZipf){
             File f = new File("/home/qinjin/mdtc/oltpbench/zipf_100000.txt");
-            if(f.exists()){
+            if(!f.exists()){
                 throw new RuntimeException("Zipf data file zipf_100000.txt does not exist!");
             }
             
