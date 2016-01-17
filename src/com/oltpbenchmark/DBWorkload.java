@@ -853,11 +853,11 @@ public class DBWorkload {
         // Save all latency.
         String allLatencyFileName = "allLatency_" + result.dcNo + "_" + result.viewLength + "_" + result.executionDelay + "_" + result.txnType + "_" + result.numClients + "_" + result.evaType + "_"
                 + System.currentTimeMillis();
-        LOG.info("Save all latency to " + allLatencyFileName);
+        LOG.info("Save all latency to /home/qinjin/mdtc/oltpbench/" + allLatencyFileName);
         File f = new File("/home/qinjin/mdtc/oltpbench/" + allLatencyFileName);
         if (f.exists()) {
             f.delete();
-            LOG.warn("Delete an existing latency file " + allLatencyFileName+". This should not happen!");
+            LOG.warn("Delete an existing latency file " + f.getPath()+". This should not happen!");
         }
 
         try {
