@@ -6,6 +6,7 @@ import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.log4j.Logger;
@@ -19,6 +20,7 @@ import mdtc.impl.APIFactory;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
+import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 import com.oltpbenchmark.benchmarks.tpcc.TPCCUtil;
 import com.oltpbenchmark.benchmarks.tpcc.TPCCWorker;
@@ -115,107 +117,116 @@ public class BatchedNewOrderExt extends NewOrderExt {
     private void batchecNewOrderTransaction(Random gen, int w_id, int d_id, int c_id, int o_ol_cnt, int o_all_local, int[] itemIDs, int[] supplierWarehouseIDs, int[] orderQuantities,
             TransactionClient txnClient, TPCCWorker w) {
         try {
-            
-            int o_id = disableZipf ? r.nextInt(RANDOM_KEY_SPACE) : zipfOID.take();
-            TxnStatement statement1 = MDTCUtil.buildPreparedStatement(true, NEWORDER_GET_DIST_CQL, String.valueOf(o_id), w_id);
-            TxnStatement statement2 = MDTCUtil.buildPreparedStatement(true, NEWORDER_GET_OPEN_ORDER, String.valueOf(o_id), w_id, d_id, o_id);
-            TxnStatement statement3 = MDTCUtil.buildPreparedStatement(true, NEWORDER_GET_NEW_ORDER, String.valueOf(o_id), w_id, d_id, o_id);
-            TxnStatement statement4 = MDTCUtil.buildPreparedStatement(false, NEWORDER_UPDATE_DIST_CQL, String.valueOf(o_id), o_id, w_id, d_id);
-            TxnStatement statement5 = MDTCUtil
-                    .buildPreparedStatement(false, NEWORDER_INSERT_ORDER_CQL, String.valueOf(o_id), o_id, d_id, w_id, c_id, System.currentTimeMillis(), o_ol_cnt, o_all_local);
-            TxnStatement statement6 = MDTCUtil.buildPreparedStatement(false, NEWORDER_INSERT_NEW_ORDER_CQL, String.valueOf(o_id), o_id, d_id, w_id);
-
-            // Read-only txns
-            List<TxnStatement> allReadStatements = Lists.newArrayList(statement1, statement2, statement3);
-            // Write-only txns
-            List<TxnStatement> allWriteStatements = Lists.newArrayList(statement4, statement5, statement6);
-            // Write-Read txns
-            List<TxnStatement> allStatements = Lists.newArrayList(statement4, statement1, statement5, statement2, statement6, statement3);
-            if(APIFactory.getEvaluationType() != EvaluationType.MDTC){
-                Collections.shuffle(allStatements);
-            }
             // Selected statements.
             List<TxnStatement> statements = Lists.newArrayList();
-            // Number of statements per transaction: 20%:1, 20%2, 60%:3.
-            int numStatments;
-            float randomFloat = gen.nextFloat();
-            if (randomFloat < 0.2f) {
-                numStatments = 1;
-            } else if (randomFloat > 0.8f) {
-                numStatments = 2;
+            String tableName = APIFactory.getTpccResultTableName();
+            
+            if("neworder".equalsIgnoreCase(tableName)){
+                buildStatementsForNeworder(o_ol_cnt, statements, d_id, w_id);
+            } else if("orderstatus".equalsIgnoreCase(tableName)){
+                buildStatementsForOrderStatus(o_ol_cnt, statements, d_id, w_id);
             } else {
-                numStatments = 3;
+                int o_id = disableZipf ? r.nextInt(RANDOM_KEY_SPACE) : zipfOID.take();
+                TxnStatement statement1 = MDTCUtil.buildPreparedStatement(true, NEWORDER_GET_DIST_CQL, String.valueOf(o_id), w_id);
+                TxnStatement statement2 = MDTCUtil.buildPreparedStatement(true, NEWORDER_GET_OPEN_ORDER, String.valueOf(o_id), w_id, d_id, o_id);
+                TxnStatement statement3 = MDTCUtil.buildPreparedStatement(true, NEWORDER_GET_NEW_ORDER, String.valueOf(o_id), w_id, d_id, o_id);
+                TxnStatement statement4 = MDTCUtil.buildPreparedStatement(false, NEWORDER_UPDATE_DIST_CQL, String.valueOf(o_id), o_id, w_id, d_id);
+                TxnStatement statement5 = MDTCUtil
+                        .buildPreparedStatement(false, NEWORDER_INSERT_ORDER_CQL, String.valueOf(o_id), o_id, d_id, w_id, c_id, System.currentTimeMillis(), o_ol_cnt, o_all_local);
+                TxnStatement statement6 = MDTCUtil.buildPreparedStatement(false, NEWORDER_INSERT_NEW_ORDER_CQL, String.valueOf(o_id), o_id, d_id, w_id);
+
+                // Read-only txns
+                List<TxnStatement> allReadStatements = Lists.newArrayList(statement1, statement2, statement3);
+                // Write-only txns
+                List<TxnStatement> allWriteStatements = Lists.newArrayList(statement4, statement5, statement6);
+                // Write-Read txns
+                List<TxnStatement> allStatements = Lists.newArrayList(statement4, statement1, statement5, statement2, statement6, statement3);
+                if(APIFactory.getEvaluationType() != EvaluationType.MDTC){
+                    Collections.shuffle(allStatements);
+                }
+                // TPCC
+                // Number of statements per transaction: 20%:1, 20%2, 60%:3.
+                int numStatments;
+                float randomFloat = gen.nextFloat();
+                if (randomFloat < 0.2f) {
+                    numStatments = 1;
+                } else if (randomFloat > 0.8f) {
+                    numStatments = 2;
+                } else {
+                    numStatments = 3;
+                }
+                switch (txnType) {
+                    case 0:
+                        for (int i = 0; i < numStatments; i++) {
+                            statements.add(allReadStatements.get(i));
+                        }
+                        numCQLRead += numStatments;
+                        break;
+                    case 1:
+                        for (int i = 0; i < numStatments; i++) {
+                            statements.add(allWriteStatements.get(i));
+                        }
+                        numCQLWrite += numStatments;
+                        break;
+                    case 2:
+                        // 20% read-only, 80% read-write
+                        if (gen.nextFloat() < 0.2f) {
+                            for (int i = 0; i < numStatments; i++) {
+                                statements.add(allReadStatements.get(i));
+                            }
+                            numCQLRead += numStatments;
+                        } else {
+                            for (int i = 0; i < numStatments; i++) {
+                                TxnStatement stmt = allStatements.get(i);
+                                if (stmt.isRead) {
+                                    numCQLRead++;
+                                } else {
+                                    numCQLWrite++;
+                                }
+                                statements.add(stmt);
+                            }
+                        }
+                        break;
+                    case 3:
+                        // 80% read-only, 20% write
+                        if (gen.nextFloat() < 0.8f) {
+                            for (int i = 0; i < numStatments; i++) {
+                                statements.add(allReadStatements.get(i));
+                            }
+                            numCQLRead += numStatments;
+                        } else {
+                            for (int i = 0; i < numStatments; i++) {
+                                TxnStatement stmt = allStatements.get(i);
+                                if (stmt.isRead) {
+                                    numCQLRead++;
+                                } else {
+                                    numCQLWrite++;
+                                }
+                                statements.add(stmt);
+                            }
+                        }
+                        break;
+                    default:
+                        if (gen.nextFloat() < 0.2f) {
+                            for (int i = 0; i < numStatments; i++) {
+                                statements.add(allReadStatements.get(i));
+                            }
+                            numCQLRead += numStatments;
+                        } else {
+                            for (int i = 0; i < numStatments; i++) {
+                                TxnStatement stmt = allStatements.get(i);
+                                if (stmt.isRead) {
+                                    numCQLRead++;
+                                } else {
+                                    numCQLWrite++;
+                                }
+                                statements.add(stmt);
+                            }
+                        }
+                        break;
+                }
             }
-            switch (txnType) {
-                case 0:
-                    for (int i = 0; i < numStatments; i++) {
-                        statements.add(allReadStatements.get(i));
-                    }
-                    numCQLRead += numStatments;
-                    break;
-                case 1:
-                    for (int i = 0; i < numStatments; i++) {
-                        statements.add(allWriteStatements.get(i));
-                    }
-                    numCQLWrite += numStatments;
-                    break;
-                case 2:
-                    // 20% read-only, 80% read-write
-                    if (gen.nextFloat() < 0.2f) {
-                        for (int i = 0; i < numStatments; i++) {
-                            statements.add(allReadStatements.get(i));
-                        }
-                        numCQLRead += numStatments;
-                    } else {
-                        for (int i = 0; i < numStatments; i++) {
-                            TxnStatement stmt = allStatements.get(i);
-                            if (stmt.isRead) {
-                                numCQLRead++;
-                            } else {
-                                numCQLWrite++;
-                            }
-                            statements.add(stmt);
-                        }
-                    }
-                    break;
-                case 3:
-                    // 80% read-only, 20% write
-                    if (gen.nextFloat() < 0.8f) {
-                        for (int i = 0; i < numStatments; i++) {
-                            statements.add(allReadStatements.get(i));
-                        }
-                        numCQLRead += numStatments;
-                    } else {
-                        for (int i = 0; i < numStatments; i++) {
-                            TxnStatement stmt = allStatements.get(i);
-                            if (stmt.isRead) {
-                                numCQLRead++;
-                            } else {
-                                numCQLWrite++;
-                            }
-                            statements.add(stmt);
-                        }
-                    }
-                    break;
-                default:
-                    if (gen.nextFloat() < 0.2f) {
-                        for (int i = 0; i < numStatments; i++) {
-                            statements.add(allReadStatements.get(i));
-                        }
-                        numCQLRead += numStatments;
-                    } else {
-                        for (int i = 0; i < numStatments; i++) {
-                            TxnStatement stmt = allStatements.get(i);
-                            if (stmt.isRead) {
-                                numCQLRead++;
-                            } else {
-                                numCQLWrite++;
-                            }
-                            statements.add(stmt);
-                        }
-                    }
-                    break;
-            }
+            
             
             ResultSet result = txnClient.executeMultiStatementsTxn(IsolationLevel.OneCopySerilizible, statements);
             if (result.isSucceed()) {
@@ -232,6 +243,52 @@ public class BatchedNewOrderExt extends NewOrderExt {
             e.printStackTrace();
         } finally {
         }
+    }
+
+    private void buildStatementsForNeworder(int num, List<TxnStatement> statements, int d_id, int w_id) {
+        Set<Integer> allIds = Sets.newHashSet();
+        // 5-15 write
+        for (int i = 0; i < num; i++) {
+            int o_id = r.nextInt(RANDOM_KEY_SPACE);
+            while(allIds.contains(o_id)){
+                o_id = r.nextInt(RANDOM_KEY_SPACE);
+            }
+            allIds.add(o_id);
+            TxnStatement writeStatement = MDTCUtil.buildPreparedStatement(false, NEWORDER_INSERT_NEW_ORDER_CQL, String.valueOf(o_id), o_id, d_id, w_id);
+            statements.add(writeStatement);
+            numCQLWrite++;
+        }
+
+        // 5-15 read
+        for (int i = 0; i < num; i++) {
+            int o_id = r.nextInt(RANDOM_KEY_SPACE);
+            while(allIds.contains(o_id)){
+                o_id = r.nextInt(RANDOM_KEY_SPACE);
+            }
+            allIds.add(o_id);
+            TxnStatement readStatement = MDTCUtil.buildPreparedStatement(true, NEWORDER_GET_NEW_ORDER, String.valueOf(o_id), w_id, d_id, o_id);
+            statements.add(readStatement);
+            numCQLRead++;
+        }
+        
+        LOG.info("Created neworder txn with "+num+" write and "+num+ " read.");
+    }
+
+    private void buildStatementsForOrderStatus(int num, List<TxnStatement> statements, int d_id, int w_id) {
+        Set<Integer> allIds = Sets.newHashSet();
+        // 5-15 read
+        for (int i = 0; i < num; i++) {
+            int o_id = r.nextInt(RANDOM_KEY_SPACE);
+            while(allIds.contains(o_id)){
+                o_id = r.nextInt(RANDOM_KEY_SPACE);
+            }
+            allIds.add(o_id);
+            TxnStatement readStatement = MDTCUtil.buildPreparedStatement(true, NEWORDER_GET_OPEN_ORDER, String.valueOf(o_id), w_id, d_id, o_id);
+            statements.add(readStatement);
+            numCQLRead++;
+        }
+        
+        LOG.info("Created orderstatus txn with "+num+" write and "+num+ " read.");
     }
 
     @Override
