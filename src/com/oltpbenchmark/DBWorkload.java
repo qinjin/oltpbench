@@ -849,16 +849,19 @@ public class DBWorkload {
         result.zipfExponent = APIFactory.zipfExponent();
         
         result.saveToCassandra();
+        String resultName = APIFactory.getTpccResultTableName();
         
         // Save all latency.
         String allLatencyFileName = "allLatency_" + result.dcNo + "_" + result.viewLength + "_" + result.executionDelay + "_" + result.txnType + "_" + result.numClients + "_" + result.evaType + "_"
                 + System.currentTimeMillis();
-        LOG.info("Save all latency to /home/qinjin/mdtc/oltpbench/" + allLatencyFileName);
-        File f = new File("/home/qinjin/mdtc/oltpbench/" + allLatencyFileName);
+        LOG.info("Save all latency to /home/qinjin/mdtc/oltpbench/"+resultName+"/" + allLatencyFileName);
+        File parent = new File("/home/qinjin/mdtc/oltpbench/"+resultName);
+        parent.mkdirs();
+        File f = new File(parent, allLatencyFileName);
         if (f.exists()) {
             f.delete();
             LOG.warn("Delete an existing latency file " + f.getPath()+". This should not happen!");
-        }
+        } 
 
         try {
             Iterator<Long> iter = Worker.allLatency.iterator();
